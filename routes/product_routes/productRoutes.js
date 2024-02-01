@@ -1,9 +1,10 @@
 var express = require('express');
 var router = express.Router();
-var ProductController = require("../../controllers/product_controller/productController")
-// var {authenticateToken, uploadImage} = require('../common/commonFunction');
+var ProductController = require("../../controllers/product_controller/productController");
+const validateProduct = require('../../middlewares/validateProduct');
 
-router.post('/addProduct', ProductController.addProduct);
+
+router.post('/addProduct',validateProduct, ProductController.addProduct);
 router.get('/getProduct', (req,res)=>{
     res.status(200).send("Jay sheree Ram");
 });

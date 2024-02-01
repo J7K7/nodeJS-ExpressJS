@@ -58,31 +58,6 @@ const announcementsTable = `CREATE TABLE IF NOT EXISTS announcements (
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
   `
 
-  const featuresProductRelationtable = `
-  CREATE TABLE IF NOT EXISTS featuresproduct_relation (
-    featureId int DEFAULT NULL,
-    productId int DEFAULT NULL,
-    id int NOT NULL AUTO_INCREMENT,
-    PRIMARY KEY (id),
-    KEY featureId_idx (featureId),
-    KEY productId_idx (productId),
-    CONSTRAINT fk_featuresproduct_relation_featureId FOREIGN KEY (featureId) REFERENCES productfeatures (featureId),
-    CONSTRAINT fk_featuresproduct_relation_productId FOREIGN KEY (productId) REFERENCES productmaster (productId)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-  `
-
-  const imageProductRelationTable = `CREATE TABLE IF NOT EXISTS imageproduct_relation (
-    productId int DEFAULT NULL,
-    imageId int DEFAULT NULL,
-    id int NOT NULL AUTO_INCREMENT,
-    PRIMARY KEY (id),
-    KEY productId_idx (productId),
-    KEY imageId_idx (imageId),
-    CONSTRAINT imageId FOREIGN KEY (imageId) REFERENCES productimages (imageId),
-    CONSTRAINT productId FOREIGN KEY (productId) REFERENCES productmaster (productId)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-  `
-
   const permissionTable = `
   CREATE TABLE IF NOT EXISTS permission (
     permissionId int NOT NULL AUTO_INCREMENT,
@@ -92,20 +67,46 @@ const announcementsTable = `CREATE TABLE IF NOT EXISTS announcements (
   `
 
   const productFeaturesTable = `
-  CREATE TABLE IF NOT EXISTS productfeatures (
-    featureId int NOT NULL,
+  CREATE TABLE IF NOT EXISTS product_features (
+    featureId INT AUTO_INCREMENT,
     featureName varchar(45) NOT NULL,
     featureDescription text,
     PRIMARY KEY (featureId)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
   `
+
+  
+  const featuresProductRelationtable = `
+  CREATE TABLE IF NOT EXISTS productfeature_relation (
+    featureId int DEFAULT NULL,
+    productId int DEFAULT NULL,
+    id int NOT NULL AUTO_INCREMENT,
+    PRIMARY KEY (id),
+    KEY featureId_idx (featureId),
+    KEY productId_idx (productId),
+    CONSTRAINT fk_productfeature_relation_featureId FOREIGN KEY (featureId) REFERENCES product_features (featureId),
+    CONSTRAINT fk_productfeature_relation_productId FOREIGN KEY (productId) REFERENCES productmaster (productId)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `
   
   const productImagesTable = `
-  CREATE TABLE IF NOT EXISTS productimages (
-    imageId int NOT NULL,
+  CREATE TABLE IF NOT EXISTS productImages (
+    imageId int AUTO_INCREMENT,
     imagePath text,
-    timestamp datetime DEFAULT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (imageId)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `
+
+  const imageProductRelationTable = `CREATE TABLE IF NOT EXISTS productImage_relation (
+    id int NOT NULL AUTO_INCREMENT,
+    productId int DEFAULT NULL,
+    imageId int DEFAULT NULL,
+    PRIMARY KEY (id),
+    KEY productId_idx (productId),
+    KEY imageId_idx (imageId),
+    CONSTRAINT imageId FOREIGN KEY (imageId) REFERENCES productImages (imageId),
+    CONSTRAINT productId FOREIGN KEY (productId) REFERENCES productmaster (productId)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
   `
 
