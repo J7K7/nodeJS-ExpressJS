@@ -1,6 +1,5 @@
 const { isValidSqlDateFormat } = require("../common/dateFormat");
 
-
 // This middleware is for validating the product data before it gets saved to the database.
 const validateProduct = (req, res, next) => {
   const {
@@ -11,9 +10,11 @@ const validateProduct = (req, res, next) => {
       active_toDate,
       productCapacity,
       featureData,
+      imagesLength
   } = req.body;
 
   // Check if all required fields are present
+//   console.log(req)
   if (!productName || !productDescription || !advanceBookingDuration || !active_fromDate || !active_toDate || !productCapacity || !featureData) {
       return res.status(400).json({ Status: false, msg: 'Invalid data. Please provide all required fields.' });
   }
@@ -39,6 +40,12 @@ const validateProduct = (req, res, next) => {
   if (fromDate < currentDateWithoutTime) {
       return res.status(400).json({ Status: false, msg: 'active_fromDate must be greater than or equal to the current date.' });
   }
+/* 
+  // Validation for the maximum 7 images can be uploaded
+
+  if(imagesLength>7){
+    return res.status(400).json({ Status: false, msg: 'Maximum 7 product images can be uploaded' }); 
+  } */
 
   console.log("Product Successfully verified");
 

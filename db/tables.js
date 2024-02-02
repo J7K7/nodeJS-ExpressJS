@@ -90,22 +90,22 @@ const announcementsTable = `CREATE TABLE IF NOT EXISTS announcements (
   `
   
   const productImagesTable = `
-  CREATE TABLE IF NOT EXISTS productImages (
-    imageId int AUTO_INCREMENT,
-    imagePath text,
+  CREATE TABLE IF NOT EXISTS productimages (
+    imageId INT AUTO_INCREMENT,
+    imagePath TEXT,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (imageId)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
   `
 
-  const imageProductRelationTable = `CREATE TABLE IF NOT EXISTS productImage_relation (
+  const imageProductRelationTable = `CREATE TABLE IF NOT EXISTS productimage_relation (
     id int NOT NULL AUTO_INCREMENT,
     productId int DEFAULT NULL,
     imageId int DEFAULT NULL,
     PRIMARY KEY (id),
     KEY productId_idx (productId),
     KEY imageId_idx (imageId),
-    CONSTRAINT imageId FOREIGN KEY (imageId) REFERENCES productImages (imageId),
+    CONSTRAINT imageId FOREIGN KEY (imageId) REFERENCES productimages (imageId),
     CONSTRAINT productId FOREIGN KEY (productId) REFERENCES productmaster (productId)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
   `

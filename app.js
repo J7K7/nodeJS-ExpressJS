@@ -4,7 +4,7 @@ var path = require('path');
 var logger = require('morgan');
 require('dotenv').config();
 var productRouter=require("./routes/product_routes/productRoutes")
-
+const formData =require("express-form-data");
 var app = express();
 
 
@@ -12,13 +12,13 @@ require('./db/db');
 
 app.use(logger('dev'));
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(express.static(path.join(__dirname, 'public')));
 
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
 // app.use('/images', express.static(path.join(__dirname, 'images')));
 app.use('/api/product',productRouter);
 
-
+// console.log(body);
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));

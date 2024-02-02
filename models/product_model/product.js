@@ -1,5 +1,6 @@
 const executeQuery = require("../../db/connection");
 const Feature = require("./feature");
+const ProductImage = require("./image");
 
 // This is the Model for the productMaster Table .
 class Product {
@@ -96,6 +97,7 @@ class Product {
 
       // Use Promise.all to wait for all promises to resolve
       await Promise.all(relationPromises);
+      return true
     } catch (error) {
       // Handle any errors that occur during the process
       // if error in adding feature than it is directly thrown from here 
@@ -109,5 +111,54 @@ class Product {
       );
     }
   }
+
+  // Function to Linking the ImagePaths With Product ID;
+  async linkProductWithImages(productId, imagePaths) {
+    try {
+      // Create an array to store imageIds
+      const imageIds = [];
+  
+      // Loop through imagePaths and link each image with the product
+      for (const imagePath of imagePaths) {
+        try {
+          // Add the image to the productimage table and get its ID
+          const productImage = new ProductImage(imagePath.filename);
+          const  imageId = await productImage.addProductImage();
+          //store the Image into  our global variable so we can use it later
+          imageIds.push(imageId);
+        } catch (error) {
+          // If there's an error during image creation, throw immediately
+          throw new Error(
+            `Error adding image "${imagePath}": ${error.message}`
+          );
+        }
+      }
+  
+      // Create an array of promises for the relation queries
+      const linkPromises = imageIds.map((imageId) => {
+        const linkQuery = `INSERT INTO productImage_relation (productId, imageId) VALUES (?, ?)`;
+        const linkValues = [productId, imageId];
+        return executeQuery(linkQuery, linkValues);
+      });
+  
+      // Use Promise.all to wait for all promises to resolve
+      await Promise.all(linkPromises);
+      
+      return true; // Successfully linked images with the product
+    } catch (error) {
+      // Handle any errors that occur during the process
+      // if error in adding image than it is directly thrown from here 
+      
+      if (error.message.includes("Error adding image")) {
+        throw error;
+      }
+      // otherwise error will be In linking product with images
+      console.error("Error linking product with images:", error);
+      throw new Error(
+        `Error In linking product with images: ${error.message}`
+      );
+    }
+  }
+  
 }
 module.exports = Product;
