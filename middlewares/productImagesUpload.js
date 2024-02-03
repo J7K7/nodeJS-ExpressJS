@@ -16,7 +16,7 @@ const storage = multer.diskStorage({
     //this function is not working no size or file upload type validation are added 
 
 
-    // console.log("filefilter")
+    console.log("filefilter")
     const expectedFieldNames = ['productImages'];
     const maxFileSize =  10 * 1024 * 1024; // 10MB
     const allowedFileTypes = ['image/jpeg', 'image/png','image/jpg'];

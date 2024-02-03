@@ -21,7 +21,7 @@ const validateProduct = (req, res, next) => {
 
   // Validate date format (YYYY-MM-DD)
   if (!isValidSqlDateFormat(active_fromDate) || !isValidSqlDateFormat(active_toDate)) {
-      return res.status(400).json({ Status: false, msg: 'Invalid date format. Please use YYYY-MM-DD.' });
+      return res.status(400).json({ Status: false, msg: 'Invalid date format. Please use YYYY-MM-DD. or enter Valid Date' });
   }
 
   // Convert date strings to Date objects for further comparison
@@ -42,7 +42,7 @@ const validateProduct = (req, res, next) => {
   }
 /* 
   // Validation for the maximum 7 images can be uploaded
-
+ 
   if(imagesLength>7){
     return res.status(400).json({ Status: false, msg: 'Maximum 7 product images can be uploaded' }); 
   } */

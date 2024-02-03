@@ -149,10 +149,10 @@ const announcementsTable = `CREATE TABLE IF NOT EXISTS announcements (
 
   const slotMasterTable = `
   CREATE TABLE IF NOT EXISTS slotmaster (
-    slotId int NOT NULL,
+    slotId INT AUTO_INCREMENT,
     slotDate date NOT NULL,
-    slot_fromDateTime datetime NOT NULL,
-    slot_toDateTime datetime DEFAULT NULL,
+    slotFromDateTime datetime NOT NULL,
+    slotToDateTime datetime DEFAULT NULL,
     slotCapacity int DEFAULT NULL,
     slotPrice float DEFAULT NULL,
     slotActive tinyint DEFAULT NULL,

@@ -2,6 +2,9 @@ const executeQuery = require("../../db/connection");
 const Feature = require("../../models/product_model/feature");
 const ProductImage = require("../../models/product_model/image");
 const Product = require("../../models/product_model/product");
+const moment=require('moment');
+const Slot = require("../../models/product_model/slot");
+const { combineDateTime } = require("../../common/dateFormat");
 const ProductController = {
   addProduct: async (req, res) => {
     console.log("hello");
@@ -14,6 +17,7 @@ const ProductController = {
         active_toDate,
         productCapacity,
         featureData,
+        slotData,
       } = req.body;
       //creating instance of Product Class
       const newproduct = new Product(
@@ -58,6 +62,32 @@ const ProductController = {
       }
       // imagesSaved variable now holds the result of linking images with the product
 
+
+      // It's slot section 
+
+      const fromDate = moment(active_fromDate);
+      const toDate = moment(fromDate).add(advanceBookingDuration, 'days');
+      while(fromDate.isSameOrBefore(toDate,'day') && fromDate.isSameOrBefore(active_toDate,'day')){
+        console.log(fromDate);
+            const parsedSlotData = JSON.parse(slotData);
+            // console.log(parsedSlotData);
+            for(const slot of  parsedSlotData){
+              // console.log(moment(slot.fromTime, 'HH:mm').format('HH:mm:ss'));
+              // const combinedDateTime = moment(`${fromDate.format('YYYY-MM-DD')} ${slot.fromTime}`, 'YYYY-MM-DD HH:mm');
+
+              const formattedFromTime = combineDateTime(fromDate, slot.fromTime);
+              const formattedtoTime = combineDateTime(fromDate, slot.toTime);
+              // console.log(formattedFromTime);
+              const newslot=new Slot(fromDate.format('YYYY-MM-DD'),formattedFromTime,formattedtoTime,slot.capacity,slot.price,1);
+              const slotId =await newslot.addSlot();
+              console.log(slotId);
+            }
+        fromDate.add(1,'day');
+      }
+
+
+
+
       res.status(201).json({
         productId,
         featureRelationResult,
@@ -69,13 +99,9 @@ const ProductController = {
       // Handle the error thrown by the middleware or any other errors
     console.error('Error in addProduct:');
 
-    if (error.status==400 && error.message) {
-      // If the error has a status code and a message, send a custom response
-      res.status(error.status).json({ success: false, message: error.message });
-    } else {
       // If it's an unexpected error, send a generic error response
-      res.status(500).json({ success: false, message: 'Internal Server Error' });
-    }
+      res.status(500).json({ Status: false, msg: 'Error in Adding Product : '+ error.message });
+    
     }
   },
 };
