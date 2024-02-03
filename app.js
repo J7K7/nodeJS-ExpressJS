@@ -6,6 +6,7 @@ require('dotenv').config();
 var productRouter=require("./routes/product_routes/productRoutes")
 const formData =require("express-form-data");
 var app = express();
+require('dotenv').config();
 
 
 require('./db/db');

@@ -65,7 +65,7 @@ const ProductController = {
 
       // It's slot section 
 
-      const fromDate = moment(active_fromDate);
+      /* const fromDate = moment(active_fromDate);
       const toDate = moment(fromDate).add(advanceBookingDuration, 'days');
       while(fromDate.isSameOrBefore(toDate,'day') && fromDate.isSameOrBefore(active_toDate,'day')){
         console.log(fromDate);
@@ -83,7 +83,7 @@ const ProductController = {
               console.log(slotId);
             }
         fromDate.add(1,'day');
-      }
+      } */
 
 
 
