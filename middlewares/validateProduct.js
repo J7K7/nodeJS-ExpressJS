@@ -1,8 +1,9 @@
+const { parse } = require("express-form-data");
 const { isValidSqlDateFormat } = require("../common/dateFormat");
-
+const moment = require('moment');
 // This middleware is for validating the product data before it gets saved to the database.
 const validateProduct = (req, res, next) => {
-  const {
+  var {
       productName,
       productDescription,
       advanceBookingDuration,
@@ -10,14 +11,20 @@ const validateProduct = (req, res, next) => {
       active_toDate,
       productCapacity,
       featureData,
-      imagesLength
+      slotData,
+      bookingCategory
   } = req.body;
 
   // Check if all required fields are present
 //   console.log(req)
-  if (!productName || !productDescription || !advanceBookingDuration || !active_fromDate || !active_toDate || !productCapacity || !featureData) {
+  if (!productName || !productDescription || !advanceBookingDuration || !active_fromDate || !active_toDate || !productCapacity || !featureData || !slotData || !bookingCategory) {
       return res.status(400).json({ Status: false, msg: 'Invalid data. Please provide all required fields.' });
   }
+  if(productName.length>100){
+    return res.status(400).json({Status:false,msg: "The name of the product should not exceed 100 characters."});
+  }
+
+// Validation For the Active From Date and to date 
 
   // Validate date format (YYYY-MM-DD)
   if (!isValidSqlDateFormat(active_fromDate) || !isValidSqlDateFormat(active_toDate)) {
@@ -40,12 +47,48 @@ const validateProduct = (req, res, next) => {
   if (fromDate < currentDateWithoutTime) {
       return res.status(400).json({ Status: false, msg: 'active_fromDate must be greater than or equal to the current date.' });
   }
-/* 
-  // Validation for the maximum 7 images can be uploaded
- 
-  if(imagesLength>7){
-    return res.status(400).json({ Status: false, msg: 'Maximum 7 product images can be uploaded' }); 
-  } */
+  //FeatureData validation 
+  featureData=JSON.parse(featureData);
+  if (!Array.isArray(featureData)) {
+    return res.status(400).json({ Status: false, msg: 'Invalid featureData. It should be an array.' });
+  }
+  for (const featureInfo of featureData) {
+    if (!featureInfo.name || !featureInfo.description) {
+        return res.status(400).json({ Status: false, msg: 'Invalid featureData. Missing required fields.' });
+    }
+    if(featureInfo.name.length>45){
+      return res.status(400).json({Status:false ,msg:"Invalid featureData: featureName can't exceed 45 characters"});
+    }
+  }
+
+
+  //Validation for the slotData array.
+  const parsedSlotData = JSON.parse(slotData);
+  if (!Array.isArray(parsedSlotData)) {
+    return res.status(400).json({ Status: false, msg: 'Invalid slotData. It should be an array.' });
+  }
+  if(bookingCategory=='dayWise' && parsedSlotData.length>1){
+        return res.status(400).json({ Status: false, msg: 'Invalid slotData. In DayWise Booking Category per Day contain only one slot' });
+  }
+  for (const slot of parsedSlotData) {
+    if (!slot.fromTime || !slot.toTime || !slot.capacity || !slot.price) {
+        return res.status(400).json({ Status: false, msg: 'Invalid slotData. Missing required fields.' });
+    }
+    let fromTime = moment(slot.fromTime,'HH:mm');
+    let toTime = moment(slot.toTime,'HH:mm')
+    fromTime=fromTime.format('HH:mm');
+    toTime=toTime.format('HH:mm');
+    if (bookingCategory==='slot' && fromTime>=toTime) {
+        return res.status(400).json({ Status: false, msg: 'Invalid slotData. fromTime must be before toTime.' });
+    }
+    if(bookingCategory==='dayWise' &&   toTime>fromTime){
+      console.log(fromTime,toTime)
+      return res.status(400).json({ Status: false, msg: 'Invalid slotData. checkOut Time must be before or same as checkInTime.' });
+    }
+  }
+
+  
+
 
   console.log("Product Successfully verified");
 

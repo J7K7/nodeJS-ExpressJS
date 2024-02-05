@@ -18,6 +18,7 @@ const ProductController = {
         productCapacity,
         featureData,
         slotData,
+        bookingCategory,
       } = req.body;
       //creating instance of Product Class
       const newproduct = new Product(
@@ -65,42 +66,23 @@ const ProductController = {
 
       // It's slot section 
 
-      /* const fromDate = moment(active_fromDate);
-      const toDate = moment(fromDate).add(advanceBookingDuration, 'days');
-      while(fromDate.isSameOrBefore(toDate,'day') && fromDate.isSameOrBefore(active_toDate,'day')){
-        console.log(fromDate);
-            const parsedSlotData = JSON.parse(slotData);
-            // console.log(parsedSlotData);
-            for(const slot of  parsedSlotData){
-              // console.log(moment(slot.fromTime, 'HH:mm').format('HH:mm:ss'));
-              // const combinedDateTime = moment(`${fromDate.format('YYYY-MM-DD')} ${slot.fromTime}`, 'YYYY-MM-DD HH:mm');
-
-              const formattedFromTime = combineDateTime(fromDate, slot.fromTime);
-              const formattedtoTime = combineDateTime(fromDate, slot.toTime);
-              // console.log(formattedFromTime);
-              const newslot=new Slot(fromDate.format('YYYY-MM-DD'),formattedFromTime,formattedtoTime,slot.capacity,slot.price,1);
-              const slotId =await newslot.addSlot();
-              console.log(slotId);
-            }
-        fromDate.add(1,'day');
-      } */
-
-
-
+      const slotResult=await newproduct.addInitialSlots(productId,active_fromDate, active_toDate, advanceBookingDuration, slotData,bookingCategory);
+      // console.log(slotResult);
 
       res.status(201).json({
         productId,
         featureRelationResult,
         imagesSaved,
+        slotResult,
         Status: true,
         msg: "Product has been added successfully",
       });
     } catch (error) {
       // Handle the error thrown by the middleware or any other errors
-    console.error('Error in addProduct:');
+      console.error('Error in addProduct:',error);
 
       // If it's an unexpected error, send a generic error response
-      res.status(500).json({ Status: false, msg: 'Error in Adding Product : '+ error.message });
+      res.status(500).json({ Status: false, msg: 'Error in Adding Product : ' + error.message });
     
     }
   },
