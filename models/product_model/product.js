@@ -68,8 +68,44 @@ class Product {
       throw error; // Throw the error to propagate it up the call stack
     }
   }
+  // Find Product By id
+  static async findProductById(productId) {
+    try {
+      // SQL query to fetch a product by its ID
+      const selectQuery = `
+      SELECT 
+        productId,
+        productName,
+        productDescription,
+        advanceBookingDuration,
+        active_fromDate,
+        active_toDate,
+        productCapacity,
+        isActive
+      FROM productmaster 
+      WHERE productId = ?
+      `;
+
+      // Execute the query and await the result
+      const result = await executeQuery(selectQuery, [productId]);
+
+      // Check if a product was found
+      if (result.length > 0) {
+        // Return the first product found
+        return result[0];
+      } else {
+        // If product not found, return null
+        return null;
+      }
+    } catch (error) {
+      // Handle any errors that occur during the query execution
+      console.error("Error finding product by ID:", error.message);
+      throw error; // Throw the error to propagate it up the call stack
+    }
+  }
+
   // Function to Linking the featureData with the Product class
-  async linkProductWithFeatures(productId, featureData) {
+  static async linkProductWithFeatures(productId, featureData) {
     try {
       const featureIds = [];
 
