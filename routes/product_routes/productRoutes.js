@@ -64,6 +64,8 @@ router.post('/add-feature', ProductController.addFeature);
  */
 router.delete('/delete-feature/:id', ProductController.deleteFeatureById);
 
+router.delete('/delete-image/:id', ProductController.deleteImageById);
+
 router.get('/getProduct', (req,res)=>{
     res.status(200).send("Jay sheree Ram");
 });

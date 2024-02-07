@@ -121,11 +121,15 @@ class Feature {
       const result = await executeQuery(deleteQuery, [featureId]);
 
       // Return the number of rows affected (should be 1 if deletion was successful)
-      return result.affectedRows;
+      if (!!result && result.affectedRows > 0) {
+        return true;
+      } else {
+        throw new Error('Error in Deleting feature by ID: '+error.message); 
+      }
     } catch (error) {
       // If an error occurs during the deletion process, throw the error
       throw new Error(
-        "Error in Deleting Product: " + error.message
+        "Error in Deleting Feature: " + error.message
       );
     }
   }

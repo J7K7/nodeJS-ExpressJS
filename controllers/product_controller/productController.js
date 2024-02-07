@@ -162,13 +162,14 @@ const ProductController = {
         name,
         description
       );
+      
 
       res
         .status(200)
         .json({ Status: true, message: "Feature updated successfully" });
     } catch (error) {
       if (error.message.includes("error is not defined")) {
-        console.error("Error in Updating", error);
+        console.error("Error in Updating Invalid Feature Id", error);
         return res
           .status(400)
           .json({ Status: false, msg: "Invalid FeatureId: " });
@@ -205,7 +206,7 @@ const ProductController = {
         productId,
         featureData
       );
-      console.log(featureRelationResult);
+      // console.log(featureRelationResult);
       return res
         .status(201)
         .send({ Status: true, msg: "Features has been added successfully" });
@@ -232,40 +233,48 @@ const ProductController = {
       if (!Number.isInteger(Number(featureId)) || Number(featureId) <= 0) {
         return res.status(400).json({ Status: false, msg: 'Invalid feature ID. Please Provide in positive Integer Format' });
       }
-      const existingFeature = await Feature.findById(featureId);
-      console.log(existingFeature)
-      if (!existingFeature) {
-        return res
-          .status(404)
-          .json({ Status: false, msg: "Feature not found." });
-      }
 
-      const affectedRows = await Feature.deleteFeatureById(featureId);
-
-      // Check if the feature was deleted successfully
-      if (affectedRows > 0) {
-        // If deletion was successful, send a success response
-        res
+      const result = await Feature.deleteFeatureById(featureId);
+      res
           .status(200)
           .json({ Status: true, msg: "Feature deleted successfully." });
-      } else {
-        // If no rows were affected, it means the feature with the given ID was not found
-        res
-          .status(404)
-          .json({
-            Status: false,
-            msg: "Feature not found or not deleted.",
-          });
-      }
+
+      
     } catch (error) {
       // If an error occurs during the deletion process, send an error response
-      console.error("Error deleting feature:", error);
-      res
-        .status(500)
-        .json({
-          Status: false,
-          msg: "Internal server error: " + error.message,
-        });
+      if (error.message.includes("error is not defined")) {
+        console.error("Error in Updating Invalid Feature Id", error);
+        return res
+          .status(400)
+          .json({ Status: false, msg: "Invalid FeatureId: " });
+      }
+      console.error("Error updating feature:", error);
+      res.status(500).json({
+        Status: false,
+        msg: "Internal Server Error: " + error.message,
+      });
+    }
+  },
+  deleteImageById: async (req, res) => {
+    // Extract the image ID from the request parameters
+    const imageId = req.params.id;
+  
+    try {
+      // Validate the image ID
+      if (!imageId) {
+        return res.status(404).json({ Status: false, msg: 'Invalid request.' });
+      }
+      // Validate that imageId is a positive integer
+      if (!Number.isInteger(Number(imageId)) || Number(imageId) <= 0) {
+        return res.status(400).json({ Status: false, msg: 'Invalid image ID. Please provide a positive integer.' });
+      }
+  
+      // Call the deleteImageById method from the Image model
+      const result = await ProductImage.deleteImageById(imageId);
+      return res.status(200).json({ Status: true, msg: 'Image deleted successfully.' });
+    } catch (error) {
+      console.error('Error deleting image by ID:', error);
+      return res.status(500).json({ Status: false, msg: 'Internal Server Error: '+ error.message });
     }
   },
 };
