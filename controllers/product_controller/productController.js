@@ -95,6 +95,7 @@ const ProductController = {
       var imagesSaved = true;
       // Check if files were uploaded in the request
       if (req.files && req.files.length > 0) {
+        // console.log(req.files);
         // Extract filenames from the uploaded files and store in imagePaths array
         imagePaths = req.files.map((file) => ({
           filename: file.filename,
@@ -200,7 +201,7 @@ const ProductController = {
       }
 
       const product=await Product.findProductById(productId);
-      console.log(product);
+      // console.log(product);
       if(!product){
         return res.status(404).json({Status:false,msg:"No Product Found with given ID."})
       }
@@ -225,6 +226,29 @@ const ProductController = {
         });
     }
   },
+  deleteFeatureById:async  (req, res)=> {
+    // Extract the feature ID from the request parameters
+    const featureId = req.params.id;
+    
+    try {
+      // Call the deleteFeatureById method from the Feature model
+      if(!featureId) {return res.status(404).json({ success: false, message: 'Inavalid request' });}
+      const affectedRows = await Feature.deleteFeatureById(featureId);
+  
+      // Check if the feature was deleted successfully
+      if (affectedRows > 0) {
+        // If deletion was successful, send a success response
+        res.status(200).json({ success: true, message: 'Feature deleted successfully.' });
+      } else {
+        // If no rows were affected, it means the feature with the given ID was not found
+        res.status(404).json({ success: false, message: 'Feature not found or not deleted.' });
+      }
+    } catch (error) {
+      // If an error occurs during the deletion process, send an error response
+      console.error('Error deleting feature:', error);
+      res.status(500).json({ success: false, message: 'Internal server error: '+error.message });
+    }
+  }
 };
 
 module.exports = ProductController;

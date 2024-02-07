@@ -81,5 +81,29 @@ class Feature {
        // throw the error to be caught by the calling function
     }
   }
+
+  static async deleteFeatureById(featureId) {
+    try {
+      // SQL query to delete the feature from the productfeature_relation table
+      const deleteRelationQuery = `DELETE FROM productfeature_relation WHERE featureId = ?`;
+
+      // Execute the query with the featureId as a parameter
+      await executeQuery(deleteRelationQuery, [featureId]);
+
+      // SQL query to delete the feature from the database
+      const deleteQuery = `DELETE FROM product_features WHERE featureId = ?`;
+
+      // Execute the query with the featureId as a parameter
+      const result = await executeQuery(deleteQuery, [featureId]);
+
+      // Return the number of rows affected (should be 1 if deletion was successful)
+      return result.affectedRows;
+    } catch (error) {
+      // If an error occurs during the deletion process, throw the error
+      throw new Error(
+        "Error in Deleting Product: " + error.message
+      );
+    }
+  }
 }
 module.exports = Feature;

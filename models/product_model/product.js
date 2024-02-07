@@ -126,8 +126,8 @@ class Product {
           );
         }
       }
-
-      // Create an array of promises for the relation queries
+      // This is old 1st Method : Using Promises we do multiple queries.Not good for performance
+      /*  // Create an array of promises for the relation queries
       const relationPromises = featureIds.map((featureId) => {
         const relationQuery = `INSERT INTO productfeature_relation (productId, featureId) VALUES (?, ?)`;
         const relationValues = [productId, featureId];
@@ -136,7 +136,29 @@ class Product {
 
       // Use Promise.all to wait for all promises to resolve
       await Promise.all(relationPromises);
-      return true;
+      return true; 
+      */
+
+      // Create an array of relation values by using flatMap to map each featureId to an array containing both the productId and the featureId.
+      // This effectively creates pairs of (productId, featureId) for each featureId.
+      const relationValues = featureIds.flatMap((featureId) => [
+        productId,
+        featureId,
+      ]);
+      // console.log(relationValues);
+
+      // Generate a SQL query for bulk insertion into the productfeature_relation table.
+      // This query uses template literals to dynamically create a VALUES clause with multiple rows, each containing (?, ?) placeholders for insertion.
+      // The number of rows is determined by the length of the featureIds array, and Array.fill is used to create an array with that length, each element filled with the string '(?, ?)'.
+      // The join(',') method concatenates all these strings with a comma separator to form a single string representing the VALUES clause.
+      const bulkInsertQuery = `
+        INSERT INTO productfeature_relation (productId, featureId)
+        VALUES ${Array(featureIds.length).fill("(?, ?)").join(", ")}
+      `;
+
+      // Execute the bulk insert query with the relationValues array, which contains the flattened pairs of (productId, featureId).
+      const result = await executeQuery(bulkInsertQuery, relationValues);
+      return true; // return as success
     } catch (error) {
       // Handle any errors that occur during the process
       // if error in adding feature than it is directly thrown from here
@@ -172,7 +194,7 @@ class Product {
           );
         }
       }
-
+      /* Same as Reason as explained in linkfeature.
       // Create an array of promises for the relation queries
       const linkPromises = imageIds.map((imageId) => {
         const linkQuery = `INSERT INTO productImage_relation (productId, imageId) VALUES (?, ?)`;
@@ -182,6 +204,20 @@ class Product {
 
       // Use Promise.all to wait for all promises to resolve
       await Promise.all(linkPromises);
+      */
+      // Same explanation as above in  linkFeature function
+
+      // Create an array of link query values by mapping each imageId to an array containing both the productId and the imageId.
+      const linkValues = imageIds.flatMap((imageId) => [productId, imageId]);
+
+      // Generate a SQL query for bulk insertion into the productImage_relation table.
+      const bulkInsertQuery = `
+        INSERT INTO productImage_relation (productId, imageId)
+        VALUES ${Array(imageIds.length).fill("(?, ?)").join(", ")}
+      `;
+
+      // Execute the bulk insert query with the linkValues array, which contains the flattened pairs of (productId, imageId).
+      const result = await executeQuery(bulkInsertQuery, linkValues);
 
       return true; // Successfully linked images with the product
     } catch (error) {
@@ -317,7 +353,8 @@ class Product {
           `Error in adding slot Invalid slotData or Empty slotData`
         );
       }
-      // Create an array of promises for the relation queries
+      // Same reson as explained in linkfeature function
+      /* // Create an array of promises for the relation queries
       const linkPromises = slotIds.map((slotId) => {
         const linkQuery = `INSERT INTO slotproduct_relation (productId, slotId) VALUES (?, ?)`;
         const linkValues = [productId, slotId];
@@ -325,7 +362,19 @@ class Product {
       });
 
       // Use Promise.all to wait for all promises to resolve
-      await Promise.all(linkPromises);
+      await Promise.all(linkPromises); */
+
+      // Create an array of link query values by mapping each slotId to an array containing both the productId and the slotId.
+      const linkValues = slotIds.flatMap((slotId) => [productId, slotId]);
+
+      // Generate a SQL query for bulk insertion into the slotproduct_relation table.
+      const bulkInsertQuery = `
+        INSERT INTO slotproduct_relation (productId, slotId)
+        VALUES ${Array(slotIds.length).fill("(?, ?)").join(", ")}
+      `;
+
+      // Execute the bulk insert query with the linkValues array, which contains the flattened pairs of (productId, slotId).
+      await executeQuery(bulkInsertQuery, linkValues);
 
       return true; // Successfully linked slots with the product
     } catch (error) {

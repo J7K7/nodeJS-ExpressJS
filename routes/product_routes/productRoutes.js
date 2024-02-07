@@ -46,7 +46,23 @@ router.post('/add-product',productImagesUpload, ProductController.addProduct);
  */
 router.put('/update-feature/:id',ProductController.updateFeature );
 
+/* 
+ POST /add-feature:
+  - Description: Endpoint for adding a new feature to a product.
+  - Body Type: JSON
+  - Request Body Parameters:
+    - featureData: array (required) - Array of feature objects to be added to the product.
+    - productId: string (required) - The ID of the product to which features are to be added.
+ */
 router.post('/add-feature', ProductController.addFeature);
+/* 
+ DELETE /delete-product/:id:
+  - Description: Endpoint for deleting a feature by its ID.
+  - Body Type: None
+  - Request Parameters:
+    - id: string (required) - The ID of the feature to be deleted.
+ */
+router.delete('/delete-product/:id', ProductController.deleteFeatureById);
 
 router.get('/getProduct', (req,res)=>{
     res.status(200).send("Jay sheree Ram");
