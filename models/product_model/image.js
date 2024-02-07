@@ -32,16 +32,17 @@ class ProductImage {
       }
       // Get the image file path from the database result
       const imagePath = imageInfo[0].imagePath;
-      console.log(imagePath)
+      //   console.log(imagePath)
 
       // Delete the image file from the local storage
-      fs.unlinkSync(path.join(__dirname, "../../public/images/product", imagePath));
+      fs.unlinkSync(
+        path.join(__dirname, "../../public/images/product", imagePath)
+      );
 
-      
       // Delete the entries related to the image from the productImage_relation table
       const deleteRelationQuery = `DELETE FROM productImage_relation WHERE imageId = ?`;
       await executeQuery(deleteRelationQuery, [imageId]);
-      if (deleteRelationQuery.affectedRows === 0 ) {
+      if (deleteRelationQuery.affectedRows === 0) {
         throw new Error("Failed to delete image record.");
       }
 
@@ -51,13 +52,29 @@ class ProductImage {
       const result = await executeQuery(deleteQuery, [imageId]);
 
       // Check if the image record was deleted successfully
-      if (result.affectedRows === 0 ) {
+      if (result.affectedRows === 0) {
         throw new Error("Failed to delete image record.");
       }
-
     } catch (error) {
       console.error("Error deleting image by ID:", error);
       throw error;
+    }
+  }
+  static async getImageCountForProduct(productId) {
+    try {
+      // SQL query to count images associated with the product
+      const countQuery = `SELECT COUNT(*) AS imageCount FROM productImage_relation WHERE productId = ?`;
+
+      // Execute the query with productId as parameter
+      const result = await executeQuery(countQuery, [productId]);
+
+      // Extract the image count from the query result
+      const imageCount = result[0].imageCount;
+
+      return imageCount;
+    } catch (error) {
+      // Handle errors, such as database query errors
+      throw new Error(`Error retrieving image count for product: ${error.message}`);
     }
   }
 }

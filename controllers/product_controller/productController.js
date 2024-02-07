@@ -4,12 +4,17 @@ const ProductImage = require("../../models/product_model/image");
 const Product = require("../../models/product_model/product");
 const moment = require("moment");
 const Slot = require("../../models/product_model/slot");
+const path = require("path");
+const fs = require("fs");
 const { combineDateTime } = require("../../common/dateFormat");
 const {
   productDetailsValidation,
   slotValidation,
   featureValidation,
 } = require("../../common/validations");
+const { log } = require("console");
+const maxImagesPerProduct = process.env.MAX_IMAGES_PER_PRODUCT;
+
 const ProductController = {
   addProduct: async (req, res) => {
     try {
@@ -147,7 +152,12 @@ const ProductController = {
       // console.log(req.params.id);
       // Check if the provided ID is valid (e.g., is a positive integer)
       if (!Number.isInteger(Number(featureId)) || Number(featureId) <= 0) {
-        return res.status(400).json({ Status: false, msg: 'Invalid feature ID. Please Provide in positive Integer Format' });
+        return res
+          .status(400)
+          .json({
+            Status: false,
+            msg: "Invalid feature ID. Please Provide in positive Integer Format",
+          });
       }
 
       // Check if at least one field is provided
@@ -162,7 +172,6 @@ const ProductController = {
         name,
         description
       );
-      
 
       res
         .status(200)
@@ -225,21 +234,22 @@ const ProductController = {
     try {
       // Call the deleteFeatureById method from the Feature model
       if (!featureId) {
-        return res
-          .status(404)
-          .json({ Status: false, msg: "Inavalid request" });
+        return res.status(404).json({ Status: false, msg: "Inavalid request" });
       }
       // Validate that featureId is number
       if (!Number.isInteger(Number(featureId)) || Number(featureId) <= 0) {
-        return res.status(400).json({ Status: false, msg: 'Invalid feature ID. Please Provide in positive Integer Format' });
+        return res
+          .status(400)
+          .json({
+            Status: false,
+            msg: "Invalid feature ID. Please Provide in positive Integer Format",
+          });
       }
 
       const result = await Feature.deleteFeatureById(featureId);
       res
-          .status(200)
-          .json({ Status: true, msg: "Feature deleted successfully." });
-
-      
+        .status(200)
+        .json({ Status: true, msg: "Feature deleted successfully." });
     } catch (error) {
       // If an error occurs during the deletion process, send an error response
       if (error.message.includes("error is not defined")) {
@@ -258,23 +268,90 @@ const ProductController = {
   deleteImageById: async (req, res) => {
     // Extract the image ID from the request parameters
     const imageId = req.params.id;
-  
+
     try {
       // Validate the image ID
       if (!imageId) {
-        return res.status(404).json({ Status: false, msg: 'Invalid request.' });
+        return res.status(404).json({ Status: false, msg: "Invalid request." });
       }
       // Validate that imageId is a positive integer
       if (!Number.isInteger(Number(imageId)) || Number(imageId) <= 0) {
-        return res.status(400).json({ Status: false, msg: 'Invalid image ID. Please provide a positive integer.' });
+        return res
+          .status(400)
+          .json({
+            Status: false,
+            msg: "Invalid image ID. Please provide a positive integer.",
+          });
       }
-  
+
       // Call the deleteImageById method from the Image model
       const result = await ProductImage.deleteImageById(imageId);
-      return res.status(200).json({ Status: true, msg: 'Image deleted successfully.' });
+      return res
+        .status(200)
+        .json({ Status: true, msg: "Image deleted successfully." });
     } catch (error) {
-      console.error('Error deleting image by ID:', error);
-      return res.status(500).json({ Status: false, msg: 'Internal Server Error: '+ error.message });
+      console.error("Error deleting image by ID:", error);
+      return res
+        .status(500)
+        .json({
+          Status: false,
+          msg: "Internal Server Error: " + error.message,
+        });
+    }
+  },
+  addProductImage: async (req, res) => {
+    const productId = req.body.productId;
+
+    try {
+      // Check if request body contains productId and image file
+      if (!req.body.productId || !(req.files && req.files.length > 0)) {
+        return res
+          .status(400)
+          .json({
+            Status: false,
+            msg: "Product ID and image file are required.",
+          });
+      }
+      //Counting Exiting Images Count
+      const existingImagesCount = await ProductImage.getImageCountForProduct(productId);
+      const totalImageCount = existingImagesCount + req.files.length;
+      // console.log(totalImageCount);
+      // If the number of images for this product already reaches the maximum limit, reject the request
+      if (totalImageCount > maxImagesPerProduct) {
+         // Remove uploaded images from the local directory
+         for (const file of req.files) {
+          // console.log(file);
+          fs.unlinkSync(file.path);
+          //This can be also used;
+          // fs.unlinkSync(path.join(__dirname, "../../public/images/product", file.filename));
+        }
+        return res.status(403).json({ 
+          Status: false,
+          msg: `The product can only have a total maximum of ${maxImagesPerProduct} images.`
+         })
+      }
+
+      // Extract filenames from the uploaded files and store in imagePaths array
+      imagePaths = req.files.map((file) => ({
+        filename: file.filename,
+      }));
+      // Call the linkProductWithImages function to link images with the product
+      imagesSaved = await Product.linkProductWithImages(
+        productId,
+        imagePaths
+      );
+  
+      // Send a success response
+      res.status(200).json({ Status: true, msg: "Image added successfully." });
+    } catch (error) {
+      // Handle errors
+      console.error("Error adding image:", error);
+      res
+        .status(500)
+        .json({
+          Status: false,
+          msg: "Internal server error.: " + error.message,
+        });
     }
   },
 };

@@ -20,6 +20,7 @@ const storage = multer.diskStorage({
   },
   filename: function (req, file, cb) {
     // console.log(req.files.length)
+    // console.log(req.files)
     
     if (!file) {
       console.log("No file provided");

@@ -174,7 +174,7 @@ class Product {
   }
 
   // Function to Linking the ImagePaths With Product ID;
-  async linkProductWithImages(productId, imagePaths) {
+  static async linkProductWithImages(productId, imagePaths) {
     try {
       // Create an array to store imageIds
       const imageIds = [];
