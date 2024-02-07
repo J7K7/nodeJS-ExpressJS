@@ -62,7 +62,7 @@ router.post('/add-feature', ProductController.addFeature);
   - Request Parameters:
     - id: string (required) - The ID of the feature to be deleted.
  */
-router.delete('/delete-product/:id', ProductController.deleteFeatureById);
+router.delete('/delete-feature/:id', ProductController.deleteFeatureById);
 
 router.get('/getProduct', (req,res)=>{
     res.status(200).send("Jay sheree Ram");

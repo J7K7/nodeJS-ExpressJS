@@ -23,6 +23,30 @@ class Feature {
       throw error; // throw the error to be caught by the calling function
     }
   }
+   // Function to find a feature by its ID
+   static async findById(featureId) {
+    try {
+      // SQL query to find the feature by ID
+      const query = `SELECT featureId, featureName ,
+      featureDescription FROM product_features WHERE featureId = ?`;
+
+      // Execute the query with the feature ID parameter
+      const result = await executeQuery(query, [featureId]);
+      // console.log(result);
+
+      // If the query returns a result, return the feature object
+      if (result.length > 0) {
+        return result[0];
+      } else {
+        // If no feature found with the given ID, return null
+        return null;
+      }
+    } catch (error) {
+      // Handle any errors that occur during the database operation
+      console.error('Error finding feature by ID:', error);
+      throw error;
+    }
+  }
   // Function to update feature by ID
   static async updateFeatureById(featureId, featureName, featureDescription) {
     try {

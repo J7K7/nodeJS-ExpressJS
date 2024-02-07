@@ -134,12 +134,10 @@ const ProductController = {
       console.error("Error in addProduct:", error);
 
       // If it's an unexpected error, send a generic error response
-      res
-        .status(500)
-        .json({
-          Status: false,
-          msg: "Error in Adding Product : " + error.message,
-        });
+      res.status(500).json({
+        Status: false,
+        msg: "Error in Adding Product : " + error.message,
+      });
     }
   },
   updateFeature: async (req, res) => {
@@ -148,20 +146,16 @@ const ProductController = {
       const { name, description } = req.body;
       // console.log(req.params.id);
       // Check if the provided ID is valid (e.g., is a positive integer)
-      if (!/^\d+$/.test(featureId)) {
-        return res
-          .status(400)
-          .json({ Staus: false, msg: "Invalid feature ID." });
+      if (!Number.isInteger(Number(featureId)) || Number(featureId) <= 0) {
+        return res.status(400).json({ Status: false, msg: 'Invalid feature ID. Please Provide in positive Integer Format' });
       }
 
       // Check if at least one field is provided
       if (!name || !description) {
-        return res
-          .status(400)
-          .json({
-            Staus: false,
-            msg: "Plaese Provide The feature name And description for feature Update",
-          });
+        return res.status(400).json({
+          Staus: false,
+          msg: "Plaese Provide The feature name And description for feature Update",
+        });
       }
       const result = await Feature.updateFeatureById(
         featureId,
@@ -180,12 +174,10 @@ const ProductController = {
           .json({ Status: false, msg: "Invalid FeatureId: " });
       }
       console.error("Error updating feature:", error);
-      res
-        .status(500)
-        .json({
-          Status: false,
-          msg: "Internal Server Error: " + error.message,
-        });
+      res.status(500).json({
+        Status: false,
+        msg: "Internal Server Error: " + error.message,
+      });
     }
   },
   addFeature: async (req, res) => {
@@ -200,12 +192,13 @@ const ProductController = {
           .json({ Status: false, msg: featureValidationResult.message });
       }
 
-      const product=await Product.findProductById(productId);
+      const product = await Product.findProductById(productId);
       // console.log(product);
-      if(!product){
-        return res.status(404).json({Status:false,msg:"No Product Found with given ID."})
+      if (!product) {
+        return res
+          .status(404)
+          .json({ Status: false, msg: "No Product Found with given ID." });
       }
-
 
       // Create a new feature and linking It with productId By calling the linkProductWithFeatures function
       const featureRelationResult = await Product.linkProductWithFeatures(
@@ -218,37 +211,63 @@ const ProductController = {
         .send({ Status: true, msg: "Features has been added successfully" });
     } catch (error) {
       console.error("Error adding feature:", error);
+      res.status(500).json({
+        Status: false,
+        msg: "Error in Adding Feature : " + error.message,
+      });
+    }
+  },
+  deleteFeatureById: async (req, res) => {
+    // Extract the feature ID from the request parameters
+    const featureId = req.params.id;
+
+    try {
+      // Call the deleteFeatureById method from the Feature model
+      if (!featureId) {
+        return res
+          .status(404)
+          .json({ Status: false, msg: "Inavalid request" });
+      }
+      // Validate that featureId is number
+      if (!Number.isInteger(Number(featureId)) || Number(featureId) <= 0) {
+        return res.status(400).json({ Status: false, msg: 'Invalid feature ID. Please Provide in positive Integer Format' });
+      }
+      const existingFeature = await Feature.findById(featureId);
+      console.log(existingFeature)
+      if (!existingFeature) {
+        return res
+          .status(404)
+          .json({ Status: false, msg: "Feature not found." });
+      }
+
+      const affectedRows = await Feature.deleteFeatureById(featureId);
+
+      // Check if the feature was deleted successfully
+      if (affectedRows > 0) {
+        // If deletion was successful, send a success response
+        res
+          .status(200)
+          .json({ Status: true, msg: "Feature deleted successfully." });
+      } else {
+        // If no rows were affected, it means the feature with the given ID was not found
+        res
+          .status(404)
+          .json({
+            Status: false,
+            msg: "Feature not found or not deleted.",
+          });
+      }
+    } catch (error) {
+      // If an error occurs during the deletion process, send an error response
+      console.error("Error deleting feature:", error);
       res
         .status(500)
         .json({
           Status: false,
-          msg: "Error in Adding Feature : " + error.message,
+          msg: "Internal server error: " + error.message,
         });
     }
   },
-  deleteFeatureById:async  (req, res)=> {
-    // Extract the feature ID from the request parameters
-    const featureId = req.params.id;
-    
-    try {
-      // Call the deleteFeatureById method from the Feature model
-      if(!featureId) {return res.status(404).json({ success: false, message: 'Inavalid request' });}
-      const affectedRows = await Feature.deleteFeatureById(featureId);
-  
-      // Check if the feature was deleted successfully
-      if (affectedRows > 0) {
-        // If deletion was successful, send a success response
-        res.status(200).json({ success: true, message: 'Feature deleted successfully.' });
-      } else {
-        // If no rows were affected, it means the feature with the given ID was not found
-        res.status(404).json({ success: false, message: 'Feature not found or not deleted.' });
-      }
-    } catch (error) {
-      // If an error occurs during the deletion process, send an error response
-      console.error('Error deleting feature:', error);
-      res.status(500).json({ success: false, message: 'Internal server error: '+error.message });
-    }
-  }
 };
 
 module.exports = ProductController;
