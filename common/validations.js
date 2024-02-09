@@ -1,8 +1,8 @@
 const moment = require('moment');
 
 // Function to validate product details
-const productDetailsValidation = (productName, productDescription, advanceBookingDuration, active_fromDate, active_toDate, productCapacity, featureData, slotData, bookingCategory) => {
-    if (!productName || !productDescription || !advanceBookingDuration || !active_fromDate || !active_toDate || !productCapacity || !featureData || !slotData || !bookingCategory) {
+const productDetailsValidation = (productName, productDescription, advanceBookingDuration, active_fromDate, active_toDate, productCapacity, featureData, slotData, bookingCategoryId) => {
+    if (!productName || !productDescription || !advanceBookingDuration || !active_fromDate || !active_toDate || !productCapacity || !featureData || !slotData || !bookingCategoryId) {
         return { isValid: false, message: 'Invalid data. Please provide all required fields.' };
     }
     if (productName.length > 100) {
@@ -33,7 +33,7 @@ const productDetailsValidation = (productName, productDescription, advanceBookin
 };
 
 // Function to validate slot data
-const slotValidation = (slotData, bookingCategory) => {
+const slotValidation = (slotData, bookingCategoryId) => {
     // const parsedSlotData = JSON.parse(slotData);
     for (const slot of slotData) {
         if (!slot.fromTime || !slot.toTime || !slot.capacity || !slot.price) {
@@ -44,10 +44,10 @@ const slotValidation = (slotData, bookingCategory) => {
         if (!fromTime.isValid() || !toTime.isValid()) {
             return { isValid: false, message: 'Invalid time format. Please use HH:mm.' };
         }
-        if (bookingCategory === 'slot' && fromTime >= toTime) {
+        if (bookingCategoryId == 1 && fromTime >= toTime) {
             return { isValid: false, message: 'Invalid slotData. fromTime must be before toTime.' };
         }
-        if (bookingCategory === 'dayWise' && toTime > fromTime) {
+        if (bookingCategoryId == 2 && toTime > fromTime) {
             return { isValid: false, message: 'Invalid slotData. checkOut Time must be before or same as checkInTime.' };
         }
     }

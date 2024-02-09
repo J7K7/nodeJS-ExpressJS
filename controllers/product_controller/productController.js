@@ -13,6 +13,7 @@ const {
   featureValidation,
 } = require("../../common/validations");
 const { log } = require("console");
+const { all } = require("../../routes/product_routes/productRoutes");
 const maxImagesPerProduct = process.env.MAX_IMAGES_PER_PRODUCT;
 
 const ProductController = {
@@ -27,7 +28,7 @@ const ProductController = {
         productCapacity,
         featureData,
         slotData,
-        bookingCategory,
+        bookingCategoryId,
       } = req.body;
 
       //Validate basic details of product
@@ -40,7 +41,7 @@ const ProductController = {
         productCapacity,
         featureData,
         slotData,
-        bookingCategory
+        bookingCategoryId
       );
       if (!productValidationResult.isValid) {
         return res
@@ -52,7 +53,7 @@ const ProductController = {
       const parsedSlotData = JSON.parse(slotData);
       const slotValidationResult = slotValidation(
         parsedSlotData,
-        bookingCategory
+        bookingCategoryId
       );
       if (!slotValidationResult.isValid) {
         return res
@@ -106,7 +107,7 @@ const ProductController = {
           filename: file.filename,
         }));
         // Call the linkProductWithImages function to link images with the product
-        imagesSaved = await newproduct.linkProductWithImages(
+        imagesSaved = await Product.linkProductWithImages(
           productId,
           imagePaths
         );
@@ -115,13 +116,13 @@ const ProductController = {
 
       // It's slot section
 
-      const slotResult = await newproduct.addInitialSlots(
+      const slotResult = await Product.addInitialSlots(
         productId,
         active_fromDate,
         active_toDate,
         advanceBookingDuration,
         slotData,
-        bookingCategory
+        bookingCategoryId
       );
       // console.log(slotResult);
       // const testing= await Feature.getFeaturesByProductId(productId)
@@ -145,6 +146,123 @@ const ProductController = {
       });
     }
   },
+  getAllProductsWithImagesandFeature: async (req, res) => {
+    try {
+      // Query your database to fetch all product details
+      const allProductDetails =
+        await Product.getAllProductDetailsWithImagesAndFeatures(); // Implement this method in your Product model
+
+      // Organize the retrieved data into the desired format
+      // console.log(allProductDetails)
+      const productsData = {};
+      allProductDetails.forEach((row) => {
+        const productId = row.productId;
+        if (!productsData[productId]) {
+          productsData[productId] = {
+            productId: row.productId,
+            productName: row.productName,
+            advanceBookingDuration: row.advanceBookingDuration,
+            active_fromDate: row.active_fromDate,
+            active_toDate: row.active_toDate,
+            images: [], // Initialize an empty array for images
+            features: [],
+          };
+        }
+        // Remove duplicate image IDs and feature data
+        if (
+          row.imageId &&
+          !productsData[productId].images.find(
+            (img) => img.imageId === row.imageId
+          )
+        ) {
+          productsData[productId].images.push({
+            imageId: row.imageId,
+            imagePath: row.imagePath,
+          });
+        }
+        if (
+          row.featureId &&
+          !productsData[productId].features.find(
+            (feature) => feature.featureId === row.featureId
+          )
+        ) {
+          productsData[productId].features.push({
+            featureId: row.featureId,
+            featureName: row.featureName,
+            featureDescription: row.featureDescription,
+          });
+        }
+      });
+
+      // Convert the product objects to an array
+      const productsArray = Object.values(productsData);
+
+      // Return the result
+      res.status(200).json({ Status: true, productsData: productsArray });
+    } catch (error) {
+      console.error("Error fetching product details:", error);
+      res.status(500).json({
+        Status: false,
+        msg: "Internal server error: " + error.message,
+      });
+    }
+  },
+  getProductDetailsById: async (req, res) => {
+    const productId = req.params.id;
+
+    try {
+      // Call the function to fetch product details by ID
+      const productData = await Product.getProductDetailsById(productId);
+
+      // If productDetails is null or undefined, the product doesn't exist
+      if (!productData) {
+        return res
+          .status(404)
+          .json({ Status: false, msg: "Product not found." });
+      }
+
+      const productDetails = {
+        productId: productData[0].productId,
+        productName: productData[0].productName,
+        images: [],
+        features: [],
+      };
+
+      const uniqueImages = new Set();
+      const uniqueFeatures = new Set();
+
+      productData.forEach((row) => {
+        // Add unique images
+        if (!uniqueImages.has(row.imageId)) {
+          productDetails.images.push({
+            imageId: row.imageId,
+            imagePath: row.imagePath,
+          });
+          uniqueImages.add(row.imageId);
+        }
+
+        // Add unique features
+        if (!uniqueFeatures.has(row.featureId)) {
+          productDetails.features.push({
+            featureId: row.featureId,
+            featureName: row.featureName,
+            featureDescription: row.featureDescription,
+          });
+          uniqueFeatures.add(row.featureId);
+        }
+      });
+      // console.log(productDetails);
+
+      // return productDetails;
+      res.status(200).json({ Status: true, productData: productDetails });
+    } catch (error) {
+      console.error("Error fetching product details:", error);
+      res.status(500).json({
+        Status: false,
+        msg: "Internal server error : " + error.message,
+      });
+    }
+  },
   updateFeature: async (req, res) => {
     try {
       const featureId = req.params.id;
@@ -152,12 +270,10 @@ const ProductController = {
       // console.log(req.params.id);
       // Check if the provided ID is valid (e.g., is a positive integer)
       if (!Number.isInteger(Number(featureId)) || Number(featureId) <= 0) {
-        return res
-          .status(400)
-          .json({
-            Status: false,
-            msg: "Invalid feature ID. Please Provide in positive Integer Format",
-          });
+        return res.status(400).json({
+          Status: false,
+          msg: "Invalid feature ID. Please Provide in positive Integer Format",
+        });
       }
 
       // Check if at least one field is provided
@@ -238,12 +354,10 @@ const ProductController = {
       }
       // Validate that featureId is number
       if (!Number.isInteger(Number(featureId)) || Number(featureId) <= 0) {
-        return res
-          .status(400)
-          .json({
-            Status: false,
-            msg: "Invalid feature ID. Please Provide in positive Integer Format",
-          });
+        return res.status(400).json({
+          Status: false,
+          msg: "Invalid feature ID. Please Provide in positive Integer Format",
+        });
       }
 
       const result = await Feature.deleteFeatureById(featureId);
@@ -276,12 +390,10 @@ const ProductController = {
       }
       // Validate that imageId is a positive integer
       if (!Number.isInteger(Number(imageId)) || Number(imageId) <= 0) {
-        return res
-          .status(400)
-          .json({
-            Status: false,
-            msg: "Invalid image ID. Please provide a positive integer.",
-          });
+        return res.status(400).json({
+          Status: false,
+          msg: "Invalid image ID. Please provide a positive integer.",
+        });
       }
 
       // Call the deleteImageById method from the Image model
@@ -291,12 +403,10 @@ const ProductController = {
         .json({ Status: true, msg: "Image deleted successfully." });
     } catch (error) {
       console.error("Error deleting image by ID:", error);
-      return res
-        .status(500)
-        .json({
-          Status: false,
-          msg: "Internal Server Error: " + error.message,
-        });
+      return res.status(500).json({
+        Status: false,
+        msg: "Internal Server Error: " + error.message,
+      });
     }
   },
   addProductImage: async (req, res) => {
@@ -305,30 +415,30 @@ const ProductController = {
     try {
       // Check if request body contains productId and image file
       if (!req.body.productId || !(req.files && req.files.length > 0)) {
-        return res
-          .status(400)
-          .json({
-            Status: false,
-            msg: "Product ID and image file are required.",
-          });
+        return res.status(400).json({
+          Status: false,
+          msg: "Product ID and image file are required.",
+        });
       }
       //Counting Exiting Images Count
-      const existingImagesCount = await ProductImage.getImageCountForProduct(productId);
+      const existingImagesCount = await ProductImage.getImageCountForProduct(
+        productId
+      );
       const totalImageCount = existingImagesCount + req.files.length;
       // console.log(totalImageCount);
       // If the number of images for this product already reaches the maximum limit, reject the request
       if (totalImageCount > maxImagesPerProduct) {
-         // Remove uploaded images from the local directory
-         for (const file of req.files) {
+        // Remove uploaded images from the local directory
+        for (const file of req.files) {
           // console.log(file);
           fs.unlinkSync(file.path);
           //This can be also used;
           // fs.unlinkSync(path.join(__dirname, "../../public/images/product", file.filename));
         }
-        return res.status(403).json({ 
+        return res.status(403).json({
           Status: false,
-          msg: `The product can only have a total maximum of ${maxImagesPerProduct} images.`
-         })
+          msg: `The product can only have a total maximum of ${maxImagesPerProduct} images.`,
+        });
       }
 
       // Extract filenames from the uploaded files and store in imagePaths array
@@ -336,22 +446,79 @@ const ProductController = {
         filename: file.filename,
       }));
       // Call the linkProductWithImages function to link images with the product
-      imagesSaved = await Product.linkProductWithImages(
-        productId,
-        imagePaths
-      );
-  
+      imagesSaved = await Product.linkProductWithImages(productId, imagePaths);
+
       // Send a success response
       res.status(200).json({ Status: true, msg: "Image added successfully." });
     } catch (error) {
       // Handle errors
       console.error("Error adding image:", error);
-      res
-        .status(500)
-        .json({
+      res.status(500).json({
+        Status: false,
+        msg: "Internal server error.: " + error.message,
+      });
+    }
+  },
+  updateSlotById: async (req, res) => {
+    const {
+      slotFromDateTime,
+      slotToDateTime,
+      slotOriginalCapacity,
+      slotPrice,
+      slotBooked,
+      bookingCategoryId,
+    } = req.body;
+
+    try {
+      // Check if required parameters are provided and apply slotValidations
+      const slotData = [];
+      slotData.push({
+        price: slotPrice,
+        capacity: slotOriginalCapacity,
+        fromTime: slotFromDateTime,
+        toTime: slotToDateTime,
+      });
+      const slotValidationResult = slotValidation(SlotData, bookingCategoryId);
+      if (!slotValidationResult.isValid) {
+        return res
+          .status(400)
+          .json({ Status: false, msg: slotValidationResult.message });
+      }
+
+      // Validate the provided slot ID
+      if (!Number.isInteger(Number(slotId)) || Number(slotId) <= 0) {
+        return res.status(400).json({
           Status: false,
-          msg: "Internal server error.: " + error.message,
+          msg: "Invalid slot ID. Please provide a positive integer.",
         });
+      }
+      // Check if the updated slot capacity is less than the number of booked slots.
+      // If so, it indicates that there are booked slots exceeding the updated capacity,
+      // which is not allowed as it would result in overbooking.
+
+      if (slotOriginalCapacity < slotBooked) {
+        return res.status(400).json({
+          Status: false,
+          msg: "The number of available slots cannot be less than the number of booked slots",
+        });
+      }
+
+      // Call the updateSlotById method from the Slot model
+      const result = await Slot.updateSlotById(productId, slotId, updatedSlot);
+
+      // Send a success response
+      res.status(200).json({ Status: true, msg: "Slot updated successfully." });
+    } catch (error) {
+      // Handle errors
+      if (error.message.includes("error is not defined")) {
+        console.error("Error in Updating Invalid Slot Id", error);
+        return res.status(400).json({ Status: false, msg: "Invalid SlotId: " });
+      }
+      console.error("Error updating feature:", error);
+      res.status(500).json({
+        Status: false,
+        msg: "Internal Server Error: " + error.message,
+      });
     }
   },
 };

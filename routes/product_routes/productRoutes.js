@@ -28,11 +28,10 @@ POST /add-product:
         { "fromTime": "09:30", "toTime": "10:00", "capacity": 10, "price": 50 },
         { "fromTime": "12:30", "toTime": "15:30", "capacity": 15, "price": 600 },
       ]
-    - bookingCategory: string (optional) - The booking category for the product.
     - productImages: array of files (optional) - Images representing the product.
-    - bookingCategory: string (required) - The booking category for the product. Possible values: 'slot' or 'dayWise'.
+    - bookingCategoryId: int (required) - The booking category for the product. Possible values of that id : 1 or 2. 1="slot",2="dayWise"
 */
-router.post('/add-product',productImagesUpload, ProductController.addProduct);
+router.post('/addProduct',productImagesUpload, ProductController.addProduct);
 
 /* 
  PUT /update-feature/:id:
@@ -44,7 +43,7 @@ router.post('/add-product',productImagesUpload, ProductController.addProduct);
     - name: string (required) - The updated name of the feature.
     - description: string (required) - The updated description of the feature.
  */
-router.put('/update-feature/:id',ProductController.updateFeature );
+router.put('/updateFeature/:id',ProductController.updateFeature );
 
 /* 
  POST /add-feature:
@@ -54,7 +53,7 @@ router.put('/update-feature/:id',ProductController.updateFeature );
     - featureData: array (required) - Array of feature objects to be added to the product.
     - productId: string (required) - The ID of the product to which features are to be added.
  */
-router.post('/add-feature', ProductController.addFeature);
+router.post('/addFeature', ProductController.addFeature);
 /* 
  DELETE /delete-product/:id:
   - Description: Endpoint for deleting a feature by its ID.
@@ -62,16 +61,16 @@ router.post('/add-feature', ProductController.addFeature);
   - Request Parameters:
     - id: string (required) - The ID of the feature to be deleted.
  */
-router.delete('/delete-feature/:id', ProductController.deleteFeatureById);
+router.delete('/deleteFeature/:id', ProductController.deleteFeatureById);
 
-router.delete('/delete-image/:id', ProductController.deleteImageById);
+router.delete('/deleteImage/:id', ProductController.deleteImageById);
 
-router.get('/add-image',productImagesUpload,ProductController.addProductImage);
+router.get('/addImage',productImagesUpload,ProductController.addProductImage);
 
-router.get('/getProduct', (req,res)=>{
-    res.status(200).send("Jay sheree Ram");
-});
+router.get('/getProductDetails/:id',ProductController.getProductDetailsById );
 
+router.get('/getAllProductDetails',ProductController.getAllProductsWithImagesandFeature );
 
+router.get('/updateSlotById/:id',ProductController.getProductDetailsById );
 
 module.exports = router;

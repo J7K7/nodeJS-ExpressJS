@@ -68,6 +68,89 @@ class Product {
       throw error; // Throw the error to propagate it up the call stack
     }
   }
+  // Get All ProductDetails With Images And Feature 
+  static async getAllProductDetailsWithImagesAndFeatures() {
+    try {
+        // SQL query to fetch all product details with images and features
+        const query = `
+        SELECT
+        pm.productId,
+        pm.productName,
+        pm.productDescription,
+        pm.advanceBookingDuration,
+        pm.active_fromDate,
+        pm.active_toDate,
+        pm.productCapacity,
+        pi.imageId,
+        pi.imagePath,
+        pf.featureId,
+        pf.featureName,
+        pf.featureDescription
+      FROM
+          productmaster AS pm
+      LEFT JOIN
+          productImage_relation AS pir ON pm.productId = pir.productId
+      LEFT JOIN
+          productimages AS pi ON pir.imageId = pi.imageId
+      LEFT JOIN
+          productfeature_relation AS pfr ON pm.productId = pfr.productId
+      LEFT JOIN
+          product_features AS pf ON pfr.featureId = pf.featureId
+      WHERE 
+          pm.isDeleted = 0 
+        `;
+
+        // Execute the query
+        const result = await executeQuery(query);
+
+        // Return the result rows
+        return result;
+    } catch (error) {
+        throw new Error(`Error fetching all product details: ${error.message}`);
+    }
+}
+
+  //Get Product Details By Id
+  static async getProductDetailsById(productId) {
+    try {
+      // Query product details from productmaster table
+      const productDetailsQuery = `
+      SELECT
+        pm.productId,
+        pm.productName,
+        pm.productDescription,
+        pm.advanceBookingDuration,
+        pm.active_fromDate,
+        pm.active_toDate,
+        pm.productCapacity,
+        pi.imageId,
+        pi.imagePath,
+        pf.featureId,
+        pf.featureName,
+        pf.featureDescription
+      FROM
+          productmaster AS pm
+      LEFT JOIN
+          productImage_relation AS pir ON pm.productId = pir.productId
+      LEFT JOIN
+          productimages AS pi ON pir.imageId = pi.imageId
+      LEFT JOIN
+          productfeature_relation AS pfr ON pm.productId = pfr.productId
+      LEFT JOIN
+          product_features AS pf ON pfr.featureId = pf.featureId
+      WHERE
+          pm.productId = ?
+      `;
+      const result= await executeQuery(productDetailsQuery, [productId]);
+      if(result.length === 0){
+        throw new Error("Invalid productId")
+      }
+      return result;
+    } catch (error) {
+      console.error("Error fetching product details:", error);
+      throw error;
+    }
+  }
   // Find Product By id
   static async findProductById(productId) {
     try {
@@ -261,13 +344,13 @@ class Product {
     10. After all slots are added, the system links the productId with each slotId.
 
 */
-  async addInitialSlots(
+  static async addInitialSlots(
     productId,
     active_fromDate,
     active_toDate,
     advanceBookingDuration,
     slotData,
-    bookingCategory
+    bookingCategoryId
   ) {
     try {
       // Create an array to store slotIds
@@ -288,7 +371,7 @@ class Product {
       ) {
         // Check the booking category
         // 1st Type Booking Category = "slot";
-        if (bookingCategory === "slot") {
+        if (bookingCategoryId == 1) {
           //Adding Slots for slot booking Category
           // Create slots for the current date using iterate through parsedSlotData
           // Here We adding Slots For Each Day of Active From Date to  Advance Duration Days
@@ -316,7 +399,7 @@ class Product {
               throw new Error(`Error adding slot: ${error.message}`);
             }
           }
-        } else if (bookingCategory === "dayWise") {
+        } else if (bookingCategoryId == 2) {
           //2nd Type of Booking Category = dayWise
 
           //Create Single Day Slot for day wise Booking Category

@@ -153,9 +153,10 @@ const announcementsTable = `CREATE TABLE IF NOT EXISTS announcements (
     slotDate date NOT NULL,
     slotFromDateTime datetime NOT NULL,
     slotToDateTime datetime DEFAULT NULL,
-    slotCapacity int DEFAULT NULL,
+    slotOriginalCapacity int DEFAULT NULL,
     slotPrice float DEFAULT NULL,
     slotActive tinyint DEFAULT NULL,
+    slotBooked INT DEFAULT 0,
     PRIMARY KEY (slotId)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
   `
@@ -225,6 +226,14 @@ const announcementsTable = `CREATE TABLE IF NOT EXISTS announcements (
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
   `
 
+  const bookingCategory=`
+  CREATE TABLE IF NOT EXISTS booking_category (
+    bookingCategoryId INT AUTO_INCREMENT PRIMARY KEY,
+    booking_category_name VARCHAR(255) NOT NULL,
+    isSelected BOOLEAN NOT NULL DEFAULT false
+)
+  `
+
   module.exports = {
     announcementsTable,
     bookingStatusesTable,
@@ -244,5 +253,6 @@ const announcementsTable = `CREATE TABLE IF NOT EXISTS announcements (
     socialMediaHandleTable,
     userRoleRelationTable,
     userBookingRelationTable,
-    userMasterTable
+    userMasterTable,
+    bookingCategory
 };

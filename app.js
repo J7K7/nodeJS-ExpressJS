@@ -32,6 +32,8 @@ app.use(function(err, req, res, next) {
 
   // Send a JSON response with error details
   res.status(err.status || 500).json({
+    Status:false,
+    msg:"Invalid URL OR Internal Server Error",
     error: {
       message: err.message || 'Internal Server Error',
       stack: req.app.get('env') === 'development' ? err.stack : undefined

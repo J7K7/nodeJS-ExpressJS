@@ -66,6 +66,15 @@ async function createTables() {
   
     await connection.execute(tables.slotProductRelationTable);
 
+    await connection.execute(tables.bookingCategory)
+
+    //  Insert default entries into the Booking Category table
+    const  category1Query=`INSERT INTO booking_category (booking_category_name, isSelected) VALUES ('slot', false)`;
+    const  category2Query=`INSERT INTO Booking_Category (booking_category_name, isSelected) VALUES ('dayWise', false)`;
+    await connection.execute(category1Query);
+    await connection.execute(category2Query);
+
+
   } catch (error) {
     console.error('Error creating tables:', error);
   } finally {

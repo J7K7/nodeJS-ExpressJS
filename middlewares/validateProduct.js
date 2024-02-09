@@ -12,12 +12,12 @@ const validateProduct = (req, res, next) => {
       productCapacity,
       featureData,
       slotData,
-      bookingCategory
+      bookingCategoryId
   } = req.body;
 
   // Check if all required fields are present
 //   console.log(req)
-  if (!productName || !productDescription || !advanceBookingDuration || !active_fromDate || !active_toDate || !productCapacity || !featureData || !slotData || !bookingCategory) {
+  if (!productName || !productDescription || !advanceBookingDuration || !active_fromDate || !active_toDate || !productCapacity || !featureData || !slotData || !bookingCategoryId) {
       return res.status(400).json({ Status: false, msg: 'Invalid data. Please provide all required fields.' });
   }
   if(productName.length>100){
@@ -67,7 +67,7 @@ const validateProduct = (req, res, next) => {
   if (!Array.isArray(parsedSlotData)) {
     return res.status(400).json({ Status: false, msg: 'Invalid slotData. It should be an array.' });
   }
-  if(bookingCategory=='dayWise' && parsedSlotData.length>1){
+  if(bookingCategoryId=='dayWise' && parsedSlotData.length>1){
         return res.status(400).json({ Status: false, msg: 'Invalid slotData. In DayWise Booking Category per Day contain only one slot' });
   }
   for (const slot of parsedSlotData) {
@@ -78,16 +78,14 @@ const validateProduct = (req, res, next) => {
     let toTime = moment(slot.toTime,'HH:mm')
     fromTime=fromTime.format('HH:mm');
     toTime=toTime.format('HH:mm');
-    if (bookingCategory==='slot' && fromTime>=toTime) {
+    if (bookingCategoryId==='slot' && fromTime>=toTime) {
         return res.status(400).json({ Status: false, msg: 'Invalid slotData. fromTime must be before toTime.' });
     }
-    if(bookingCategory==='dayWise' &&   toTime>fromTime){
+    if(bookingCategoryId==='dayWise' &&   toTime>fromTime){
       console.log(fromTime,toTime)
       return res.status(400).json({ Status: false, msg: 'Invalid slotData. checkOut Time must be before or same as checkInTime.' });
     }
   }
-
-  
 
 
   console.log("Product Successfully verified");
