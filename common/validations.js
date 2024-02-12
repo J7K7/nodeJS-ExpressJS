@@ -29,6 +29,12 @@ const productDetailsValidation = (productName, productDescription, advanceBookin
         return { isValid: false, message: 'active_fromDate must be greater than or equal to the current date.' };
     }
 
+    // Validate the bookingCategory
+    if(!(bookingCategory==1 || bookingCategoryId==2)){
+        return { isValid: false, message: 'Booking Category Id has two option only either 1(slot) or Either 2(dayWise)' };
+
+    }
+
     return { isValid: true };
 };
 

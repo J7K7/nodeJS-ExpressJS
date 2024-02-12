@@ -67,10 +67,16 @@ router.delete('/deleteImage/:id', ProductController.deleteImageById);
 
 router.get('/addImage',productImagesUpload,ProductController.addProductImage);
 
-router.get('/getProductDetails/:id',ProductController.getProductDetailsById );
+router.get('/getProductDetails/:id',ProductController.getProductDetailsById );//this
 
 router.get('/getAllProductDetails',ProductController.getAllProductsWithImagesandFeature );
 
-router.get('/updateSlotById/:id',ProductController.getProductDetailsById );
+router.put('/updateSlotById/:id',ProductController.updateSlotById);
+
+router.get('/getProductDetails/:id',ProductController.getProductDetailsById );
+
+router.put('/updateSlotStatus/:id',ProductController.updateSlotStatusById );
+
+router.delete('/deleteSlotById/:id',ProductController.deleteSlotById );
 
 module.exports = router;

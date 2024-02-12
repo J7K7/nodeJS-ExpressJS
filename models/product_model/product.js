@@ -143,7 +143,7 @@ class Product {
       `;
       const result= await executeQuery(productDetailsQuery, [productId]);
       if(result.length === 0){
-        throw new Error("Invalid productId")
+        throw new Error("No Product Found with this productId")
       }
       return result;
     } catch (error) {

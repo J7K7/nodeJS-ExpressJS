@@ -124,7 +124,7 @@ class Feature {
       if (!!result && result.affectedRows > 0) {
         return true;
       } else {
-        throw new Error('Error in Deleting feature by ID: '+error.message); 
+        throw new Error('Error in Deleting feature by ID: '+ error.message); 
       }
     } catch (error) {
       // If an error occurs during the deletion process, throw the error

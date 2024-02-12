@@ -1,6 +1,8 @@
+const { combineDateTime } = require("../../common/dateFormat");
 const executeQuery = require("../../db/connection");
 const Feature = require("./feature");
 const ProductImage = require("./image");
+const moment = require('moment');
 
 // This is the Model for the productMaster Table .
 class Slot {
@@ -29,23 +31,107 @@ class Slot {
       }
 
   }
+  //getSlot by ID 
+  static async getSlotById(slotId){
+    try {
+      const query = 'SELECT slotDate, slotFromDateTime, slotToDateTime, slotOriginalCapacity, slotPrice, slotActive, slotBooked FROM slotmaster WHERE slotId = ?';
+      const result = await executeQuery(query, [slotId]);
+      if (result.length > 0) {
+        return result[0];
+      } else {
+        throw new Error('Slot not found');
+      }
+    } catch (error) {
+      throw new Error(`Error fetching slot by ID: ${error.message}`);
+    }
+  }
+  // Find the productId associated with a given slotId.
+  static async findProductIdBySlotId(slotId) {
+    try {
+      // Construct SQL query to find productId by slotId
+      const query = `
+        SELECT productId
+        FROM slotproduct_relation
+        WHERE slotId = ?
+      `;
+
+      // Execute the query with the provided slotId
+      const result = await executeQuery(query, [slotId]);
+
+      // Check if a row was found
+      if (result.length > 0) {
+        // Return the productId associated with the slot
+        return result[0].productId;
+      } else {
+        throw new Error('Slot not found.');
+      }
+    } catch (error) {
+      // Handle errors
+      throw new Error(`Error finding productId for slot: ${error.message}`);
+    }
+  }
+
+  // updateSlotStatusById 
+  static async updateSlotStatusById(slotId,status){
+    try {
+      // Construct SQL query to update slot status by ID
+      const updateQuery = `
+        UPDATE slotmaster
+        SET slotActive = ?
+        WHERE slotId = ?
+      `;
+
+      // Execute the update query to update the slot status
+      const result = await executeQuery(updateQuery, [status, slotId]);
+
+      // Check if the update was successful
+      if (result.affectedRows === 1) {
+        return true; // Slot status updated successfully
+      } else {
+        throw new Error('Failed to update slot status.');
+      }
+    } catch (error) {
+      // Handle errors
+      throw new Error(`Error updating slot status: ${error.message}`);
+    }
+  }
 
   // Function For updating particular slot details using its id
-  static async updateSlotById(slotId, newSlotDetails) {
+  static async updateSlotById(slotId, newSlotDetails,bookingCategoryId) {
+    const { fromTime, toTime, capacity, price } = newSlotDetails;
     try {
+      let result =await this.getSlotById(slotId);
+      const slotBooked=result.slotBooked
+      // Check if the updated slot capacity is less than the number of booked slots.
+      // If so, it indicates that there are booked slots exceeding the updated capacity,
+      // which is not allowed as it would result in overbooking.
+      console.log()
+      if (capacity < slotBooked) {
+        throw new Error ("The number of available slots cannot be less than the number of booked slots")
+      }
       // Construct SQL query to update slot details
       const updateQuery = `
         UPDATE slotmaster
-        SET slotFromDateTime = ?, slotToDateTime = ?, slotCapacity = ?, slotPrice = ?
+        SET slotFromDateTime = ?, slotToDateTime = ?, slotOriginalCapacity = ?, slotPrice = ?
         WHERE slotId = ?
       `;
-  
+      let slotFromDateTime,slotToDateTime;
+      if(bookingCategoryId==1){
+        slotFromDateTime=combineDateTime(result.slotDate, fromTime);
+        slotToDateTime=combineDateTime(result.slotDate, toTime);
+      }
+      else if(bookingCategoryId==2){
+        slotFromDateTime = combineDateTime(result.slotDate, fromTime);
+        const nextDayDate = moment(result.slotDate).add(1, "day");
+        slotToDateTime= combineDateTime(nextDayDate, toTime);
+      }
+      console.log()
       // Execute the update query with the new slot details
-      const result = await executeQuery(updateQuery, [
-        newSlotDetails.slotFromDateTime,
-        newSlotDetails.slotToDateTime,
-        newSlotDetails.slotCapacity,
-        newSlotDetails.slotPrice,
+      result = await executeQuery(updateQuery, [
+        slotFromDateTime,
+        slotToDateTime,
+        capacity,
+        price,
         slotId
       ]);
   
@@ -58,6 +144,37 @@ class Slot {
     } catch (error) {
       // Handle errors
       throw new Error(`Error updating slot: ${error.message}`);
+    }
+  }
+  // Function for Deleting Slot By id
+  static async deleteSlotById(slotId){
+    try {
+      // Get the original slot details using the provided slot ID
+      let productId =await this.findProductIdBySlotId(slotId);
+      console.log(productId);
+
+      // SQL query to delete the slot from the slotproduct_relation table
+      const deleteRelationQuery = `DELETE FROM slotproduct_relation WHERE slotId = ?`;
+
+      // Execute the query with the slotId as a parameter
+      await executeQuery(deleteRelationQuery, [slotId]);
+
+
+      // SQL query to delete the slot from the slotmaster
+      const deleteQuery = `DELETE FROM slotmaster WHERE slotId = ?`;
+
+      // Execute the query with the slotid as a parameter
+      const result = await executeQuery(deleteQuery, [slotId]);
+
+      // Return the number of rows affected (should be 1 if deletion was successful)
+      if (!!result && result.affectedRows > 0) {
+        return true;
+      } else {
+        throw new Error('Error in Deleting slot by ID: '+ error.message); 
+      }
+    } catch (error) {
+      // Handle errors
+      throw new Error(`Error deleting slot: ${error.message}`);
     }
   }
   

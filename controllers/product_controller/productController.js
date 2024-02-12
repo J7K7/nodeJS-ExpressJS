@@ -14,6 +14,7 @@ const {
 } = require("../../common/validations");
 const { log } = require("console");
 const { all } = require("../../routes/product_routes/productRoutes");
+const ProductAllDetails = require("../../models/product_model/productAllDetails");
 const maxImagesPerProduct = process.env.MAX_IMAGES_PER_PRODUCT;
 
 const ProductController = {
@@ -150,7 +151,7 @@ const ProductController = {
     try {
       // Query your database to fetch all product details
       const allProductDetails =
-        await Product.getAllProductDetailsWithImagesAndFeatures(); // Implement this method in your Product model
+        await Product.getAllProductDetailsWithImagesAndFeatures();
 
       // Organize the retrieved data into the desired format
       // console.log(allProductDetails)
@@ -158,39 +159,14 @@ const ProductController = {
       allProductDetails.forEach((row) => {
         const productId = row.productId;
         if (!productsData[productId]) {
-          productsData[productId] = {
-            productId: row.productId,
-            productName: row.productName,
-            advanceBookingDuration: row.advanceBookingDuration,
-            active_fromDate: row.active_fromDate,
-            active_toDate: row.active_toDate,
-            images: [], // Initialize an empty array for images
-            features: [],
-          };
+          const { productId, productName, advanceBookingDuration, active_fromDate, active_toDate } = row;
+          productsData[productId] = new ProductAllDetails(productId, productName, advanceBookingDuration, active_fromDate, active_toDate);
         }
-        // Remove duplicate image IDs and feature data
-        if (
-          row.imageId &&
-          !productsData[productId].images.find(
-            (img) => img.imageId === row.imageId
-          )
-        ) {
-          productsData[productId].images.push({
-            imageId: row.imageId,
-            imagePath: row.imagePath,
-          });
+        if (row.imageId && !productsData[productId].hasImage(row.imageId)) {
+          productsData[productId].addImage(row.imageId, row.imagePath);
         }
-        if (
-          row.featureId &&
-          !productsData[productId].features.find(
-            (feature) => feature.featureId === row.featureId
-          )
-        ) {
-          productsData[productId].features.push({
-            featureId: row.featureId,
-            featureName: row.featureName,
-            featureDescription: row.featureDescription,
-          });
+        if (row.featureId && !productsData[productId].hasFeature(row.featureId)) {
+          productsData[productId].addFeature(row.featureId, row.featureName, row.featureDescription);
         }
       });
 
@@ -212,49 +188,37 @@ const ProductController = {
 
     try {
       // Call the function to fetch product details by ID
-      const productData = await Product.getProductDetailsById(productId);
+      const productDetails = await Product.getProductDetailsById(productId);
 
       // If productDetails is null or undefined, the product doesn't exist
-      if (!productData) {
+      if (!productDetails) {
         return res
           .status(404)
           .json({ Status: false, msg: "Product not found." });
       }
+       // Create an object to store product details
+      
+      // Created the Instance of Product Details class and add data in it.
+      const { productName, advanceBookingDuration, active_fromDate, active_toDate } = productDetails[0];
+      const productData = new ProductAllDetails(productId, productName, advanceBookingDuration, active_fromDate, active_toDate);
 
-      const productDetails = {
-        productId: productData[0].productId,
-        productName: productData[0].productName,
-        images: [],
-        features: [],
-      };
-
-      const uniqueImages = new Set();
-      const uniqueFeatures = new Set();
-
-      productData.forEach((row) => {
-        // Add unique images
-        if (!uniqueImages.has(row.imageId)) {
-          productDetails.images.push({
-            imageId: row.imageId,
-            imagePath: row.imagePath,
-          });
-          uniqueImages.add(row.imageId);
+      productDetails.forEach((row) => {
+        // const productId = row.productId;
+    
+        // Add image if it doesn't exist already
+        if (!productData.hasImage(row.imageId)) {
+          productData.addImage(row.imageId, row.imagePath);
         }
-
-        // Add unique features
-        if (!uniqueFeatures.has(row.featureId)) {
-          productDetails.features.push({
-            featureId: row.featureId,
-            featureName: row.featureName,
-            featureDescription: row.featureDescription,
-          });
-          uniqueFeatures.add(row.featureId);
+    
+        // Add feature if it doesn't exist already
+        if (!productData.hasFeature(row.featureId)) {
+          productData.addFeature(row.featureId, row.featureName, row.featureDescription);
         }
       });
       // console.log(productDetails);
 
       // return productDetails;
-      res.status(200).json({ Status: true, productData: productDetails });
+      res.status(200).json({ Status: true, productData });
     } catch (error) {
       console.error("Error fetching product details:", error);
       res.status(500).json({
@@ -465,20 +429,20 @@ const ProductController = {
       slotToDateTime,
       slotOriginalCapacity,
       slotPrice,
-      slotBooked,
       bookingCategoryId,
     } = req.body;
-
+    const slotId= req.params.id;
     try {
       // Check if required parameters are provided and apply slotValidations
-      const slotData = [];
-      slotData.push({
+      const slotData = {
         price: slotPrice,
         capacity: slotOriginalCapacity,
         fromTime: slotFromDateTime,
         toTime: slotToDateTime,
-      });
-      const slotValidationResult = slotValidation(SlotData, bookingCategoryId);
+      };
+      // slotData.push();
+      // passing slotData in array form beacause slot validation take slotData in array form  only
+      const slotValidationResult = slotValidation([slotData], bookingCategoryId);
       if (!slotValidationResult.isValid) {
         return res
           .status(400)
@@ -492,27 +456,89 @@ const ProductController = {
           msg: "Invalid slot ID. Please provide a positive integer.",
         });
       }
-      // Check if the updated slot capacity is less than the number of booked slots.
-      // If so, it indicates that there are booked slots exceeding the updated capacity,
-      // which is not allowed as it would result in overbooking.
-
-      if (slotOriginalCapacity < slotBooked) {
-        return res.status(400).json({
-          Status: false,
-          msg: "The number of available slots cannot be less than the number of booked slots",
-        });
-      }
+     
 
       // Call the updateSlotById method from the Slot model
-      const result = await Slot.updateSlotById(productId, slotId, updatedSlot);
+      const result = await Slot.updateSlotById(slotId, slotData,bookingCategoryId);
 
       // Send a success response
       res.status(200).json({ Status: true, msg: "Slot updated successfully." });
     } catch (error) {
       // Handle errors
-      if (error.message.includes("error is not defined")) {
+      if (error.message.includes("error is not defined") ||error.message.includes("Slot not found")) {
         console.error("Error in Updating Invalid Slot Id", error);
         return res.status(400).json({ Status: false, msg: "Invalid SlotId: " });
+      }
+      console.error("Error updating Slot:", error);
+      res.status(500).json({
+        Status: false,
+        msg: "Internal Server Error: " + error.message,
+      });
+    }
+  },
+  updateSlotStatusById: async (req,res)=>{
+    const slotId = req.params.id;
+    const { status } = req.body; // status: 1 for activate, 0 for deactivate
+    
+    try {
+      // Activate or deactivate the slot by its ID
+      if(status==null){
+        return res.status(400).json({Status:false,msg:"Please Provide the new status of the slot"})
+      }
+
+      if (!Number.isInteger(Number(slotId)) || Number(slotId) <= 0) {
+        return res.status(400).json({
+          Status: false,
+          msg: "Invalid slot ID. Please provide a positive integer.",
+        });
+      }
+      
+      const result=await Slot.updateSlotStatusById(slotId, status);
+
+      // Send success response
+      return res.status(200).json({ Status: true, msg: `Slot ${status ? 'activated' : 'deactivated'} successfully.` });
+    } catch (error) {
+      // Handle errors
+      return res.status(500).json({ Status: false, msg: `Failed to ${status ? 'activate' : 'deactivate'} slot.`, error: error.message });
+    }
+  },
+  deleteSlotById:async (req,res)=>{
+    let slotId=req.params.id;
+    const { option, message } = req.body;
+
+    try {
+      // Check if the slot exists
+      // const slot = await Slot.findById(slotId);
+      // if (!slot) {
+      //   return res.status(404).json({ success: false, message: "Slot not found" });
+      // }
+  
+      // Option 1: Cancel all associated bookings
+      if (option === "cancleBookedSlots") {
+        // // Cancel all bookings associated with the slot
+        // await Booking.cancelBookingsForSlot(slotId);
+        
+        // // Log the cancellation and update slot status
+        // await Slot.logSlotCancellation(slotId, message);
+        // await Slot.updateSlotStatus(slotId, "cancelled");
+  
+        return res.status(200).json({ Status: true, msg: "All bookings for the slot have been canceled." });
+      }
+  
+      // Option 2: Keep already booked slots
+      if (option === "keepBookedSlots") {
+        // Log the deletion and update slot status
+        const deleteStatus=await Slot.deleteSlotById(slotId);
+  
+        return res.status(200).json({ Status: true, msg: "Slot has been deleted. Already booked slots bookings are retained." });
+      }
+  
+      // Invalid option provided
+      return res.status(400).json({ Status: false, msg: "Invalid option provided." });
+    } catch (error) {
+      if (error.message.includes("error is not defined") || error.message.includes("Slot not found")) {
+        console.error("Error in Updating Invalid Slot Id", error);
+        return res.status(404).json({ Status: false, msg: "Invalid SlotId" });
       }
       console.error("Error updating feature:", error);
       res.status(500).json({
@@ -520,7 +546,7 @@ const ProductController = {
         msg: "Internal Server Error: " + error.message,
       });
     }
-  },
+  }
 };
 
 module.exports = ProductController;
