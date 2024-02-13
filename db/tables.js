@@ -18,13 +18,14 @@ const announcementsTable = `CREATE TABLE IF NOT EXISTS announcements (
 
   const bookingsMasterTable = `
   CREATE TABLE IF NOT EXISTS bookingsmaster (
-    bookingId int NOT NULL,
+    bookingId int NOT NULL AUTO_INCREMENT,
     bookingDate date DEFAULT NULL,
     booking_fromDatetime datetime DEFAULT NULL,
     booking_toDatetime datetime DEFAULT NULL,
     status int DEFAULT NULL,
     grandTotal double DEFAULT NULL,
     timestamp timestamp NULL DEFAULT NULL,
+    cancel_message text DEFAULT NULL,
     PRIMARY KEY (bookingId),
     KEY status_idx (status),
     CONSTRAINT status FOREIGN KEY (status) REFERENCES booking_statuses (statusId)
@@ -32,6 +33,7 @@ const announcementsTable = `CREATE TABLE IF NOT EXISTS announcements (
 `;
 
   const bookProductTable = `CREATE TABLE IF NOT EXISTS bookproduct (
+    id 
     productId int NOT NULL,
     quantity int NOT NULL,
     slotId int NOT NULL,

@@ -2,7 +2,7 @@ const moment = require('moment-timezone');
 const executeQuery = require('../../db/connection')
 
 // Get the current time in Indian Standard Time (IST)
-const nowIST = moment().tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss');
+// const nowIST = moment().tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss');
 
 class BookProduct {
     constructor(productId, quantity, slotId, bookingId, bookingDate, slotFromDateTime, slotToDateTime, price) {

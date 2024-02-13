@@ -15,6 +15,7 @@ const {
 const { log } = require("console");
 const { all } = require("../../routes/product_routes/productRoutes");
 const ProductAllDetails = require("../../models/product_model/productAllDetails");
+const BookingsMaster = require("../../models/booking_model/bookingsMaster");
 const maxImagesPerProduct = process.env.MAX_IMAGES_PER_PRODUCT;
 
 const ProductController = {
@@ -159,14 +160,33 @@ const ProductController = {
       allProductDetails.forEach((row) => {
         const productId = row.productId;
         if (!productsData[productId]) {
-          const { productId, productName, advanceBookingDuration, active_fromDate, active_toDate } = row;
-          productsData[productId] = new ProductAllDetails(productId, productName, advanceBookingDuration, active_fromDate, active_toDate);
+          const {
+            productId,
+            productName,
+            advanceBookingDuration,
+            active_fromDate,
+            active_toDate,
+          } = row;
+          productsData[productId] = new ProductAllDetails(
+            productId,
+            productName,
+            advanceBookingDuration,
+            active_fromDate,
+            active_toDate
+          );
         }
         if (row.imageId && !productsData[productId].hasImage(row.imageId)) {
           productsData[productId].addImage(row.imageId, row.imagePath);
         }
-        if (row.featureId && !productsData[productId].hasFeature(row.featureId)) {
-          productsData[productId].addFeature(row.featureId, row.featureName, row.featureDescription);
+        if (
+          row.featureId &&
+          !productsData[productId].hasFeature(row.featureId)
+        ) {
+          productsData[productId].addFeature(
+            row.featureId,
+            row.featureName,
+            row.featureDescription
+          );
         }
       });
 
@@ -196,23 +216,38 @@ const ProductController = {
           .status(404)
           .json({ Status: false, msg: "Product not found." });
       }
-       // Create an object to store product details
-      
+      // Create an object to store product details
+
       // Created the Instance of Product Details class and add data in it.
-      const { productName, advanceBookingDuration, active_fromDate, active_toDate } = productDetails[0];
-      const productData = new ProductAllDetails(productId, productName, advanceBookingDuration, active_fromDate, active_toDate);
+      const {
+        productName,
+        advanceBookingDuration,
+        active_fromDate,
+        active_toDate,
+      } = productDetails[0];
+      const productData = new ProductAllDetails(
+        productId,
+        productName,
+        advanceBookingDuration,
+        active_fromDate,
+        active_toDate
+      );
 
       productDetails.forEach((row) => {
         // const productId = row.productId;
-    
+
         // Add image if it doesn't exist already
         if (!productData.hasImage(row.imageId)) {
           productData.addImage(row.imageId, row.imagePath);
         }
-    
+
         // Add feature if it doesn't exist already
         if (!productData.hasFeature(row.featureId)) {
-          productData.addFeature(row.featureId, row.featureName, row.featureDescription);
+          productData.addFeature(
+            row.featureId,
+            row.featureName,
+            row.featureDescription
+          );
         }
       });
       // console.log(productDetails);
@@ -431,7 +466,7 @@ const ProductController = {
       slotPrice,
       bookingCategoryId,
     } = req.body;
-    const slotId= req.params.id;
+    const slotId = req.params.id;
     try {
       // Check if required parameters are provided and apply slotValidations
       const slotData = {
@@ -442,7 +477,10 @@ const ProductController = {
       };
       // slotData.push();
       // passing slotData in array form beacause slot validation take slotData in array form  only
-      const slotValidationResult = slotValidation([slotData], bookingCategoryId);
+      const slotValidationResult = slotValidation(
+        [slotData],
+        bookingCategoryId
+      );
       if (!slotValidationResult.isValid) {
         return res
           .status(400)
@@ -456,16 +494,22 @@ const ProductController = {
           msg: "Invalid slot ID. Please provide a positive integer.",
         });
       }
-     
 
       // Call the updateSlotById method from the Slot model
-      const result = await Slot.updateSlotById(slotId, slotData,bookingCategoryId);
+      const result = await Slot.updateSlotById(
+        slotId,
+        slotData,
+        bookingCategoryId
+      );
 
       // Send a success response
       res.status(200).json({ Status: true, msg: "Slot updated successfully." });
     } catch (error) {
       // Handle errors
-      if (error.message.includes("error is not defined") ||error.message.includes("Slot not found")) {
+      if (
+        error.message.includes("error is not defined") ||
+        error.message.includes("Slot not found")
+      ) {
         console.error("Error in Updating Invalid Slot Id", error);
         return res.status(400).json({ Status: false, msg: "Invalid SlotId: " });
       }
@@ -476,14 +520,17 @@ const ProductController = {
       });
     }
   },
-  updateSlotStatusById: async (req,res)=>{
+  updateSlotStatusById: async (req, res) => {
     const slotId = req.params.id;
     const { status } = req.body; // status: 1 for activate, 0 for deactivate
-    
+
     try {
       // Activate or deactivate the slot by its ID
-      if(status==null){
-        return res.status(400).json({Status:false,msg:"Please Provide the new status of the slot"})
+      if (status == null) {
+        return res.status(400).json({
+          Status: false,
+          msg: "Please Provide the new status of the slot",
+        });
       }
 
       if (!Number.isInteger(Number(slotId)) || Number(slotId) <= 0) {
@@ -492,61 +539,103 @@ const ProductController = {
           msg: "Invalid slot ID. Please provide a positive integer.",
         });
       }
-      
-      const result=await Slot.updateSlotStatusById(slotId, status);
+
+      const result = await Slot.updateSlotStatusById(slotId, status);
 
       // Send success response
-      return res.status(200).json({ Status: true, msg: `Slot ${status ? 'activated' : 'deactivated'} successfully.` });
+      return res.status(200).json({
+        Status: true,
+        msg: `Slot ${status ? "activated" : "deactivated"} successfully.`,
+      });
     } catch (error) {
       // Handle errors
-      return res.status(500).json({ Status: false, msg: `Failed to ${status ? 'activate' : 'deactivate'} slot.`, error: error.message });
+      return res.status(500).json({
+        Status: false,
+        msg: `Failed to ${status ? "activate" : "deactivate"} slot.`,
+        error: error.message,
+      });
     }
   },
-  deleteSlotById:async (req,res)=>{
-    let slotId=req.params.id;
+  deleteSlotById: async (req, res) => {
+    let slotId = req.params.id;
     const { option, message } = req.body;
 
     try {
-      // Check if the slot exists
-      // const slot = await Slot.findById(slotId);
-      // if (!slot) {
-      //   return res.status(404).json({ success: false, message: "Slot not found" });
-      // }
-  
-      // Option 1: Cancel all associated bookings
-      if (option === "cancleBookedSlots") {
-        // // Cancel all bookings associated with the slot
-        // await Booking.cancelBookingsForSlot(slotId);
-        
-        // // Log the cancellation and update slot status
-        // await Slot.logSlotCancellation(slotId, message);
-        // await Slot.updateSlotStatus(slotId, "cancelled");
-  
-        return res.status(200).json({ Status: true, msg: "All bookings for the slot have been canceled." });
+      // Validation checks
+      if (!option) {
+        return res.status(400).json({
+          Status: false,
+          msg: "Please provide an option for deleting the slot.",
+        });
       }
-  
-      // Option 2: Keep already booked slots
+      // Check if the option is 'cancelBookedSl' and if there is no message provided
+      if (option == "cancelBookedSlots" && !message) {
+        // If the above condition is true, return a bad request response with a message
+        return res.status(400).json({
+          Status: false, // Indicates the status of the request
+          msg: "Please provide a message for cancelling booked slots.", // The error message to be sent to the client
+        });
+      }
+
+      // Option 1: Cancel all associated bookings for that SlotId
+      if (option === "cancelBookedSlots") {
+        // Find all bookings associated with the given slotId
+        const bookingIds = await BookingsMaster.findAllBookingsBySlotId(slotId);
+        // Check if there are any bookings associated with the slotId
+        if (bookingIds.length !== 0) {
+           // Create a message to be sent to the user
+          const cancelledMsg =
+            "The slot has been deleted due to the following reason:\n" +
+            message;
+          // Cancel the bookings with the given bookingIds and update their status to 'cancelledByAdmin'(statusId:6)
+          const updateStatus = await BookingsMaster.cancelBookingsByAdmin(bookingIds,6,cancelledMsg);
+          console.log(updateStatus);
+        }
+
+        //Now delete the slot from the Slotmaster table
+        const slotDeleteResult=await Slot.deleteSlotById(slotId);
+
+
+        //  console.log(result)
+
+        return res.status(200).json({
+          Status: true,
+          msg: "All bookings for the slot have been cancelled.",
+        });
+      }
+      // Option 2: Keep already booked slots but remove Slot from slotmaster table and keep entry in Booking Master
+      // In this option, we delete the slot entry from the SlotMaster table but retain the bookings associated with this slot.
+      // The admin is responsible for handling these existing bookings.
+
       if (option === "keepBookedSlots") {
         // Log the deletion and update slot status
-        const deleteStatus=await Slot.deleteSlotById(slotId);
-  
-        return res.status(200).json({ Status: true, msg: "Slot has been deleted. Already booked slots bookings are retained." });
+        const deleteStatus = await Slot.deleteSlotById(slotId);
+
+        return res.status(200).json({
+          Status: true,
+          msg: "Slot has been deleted. Already booked bookings for this slot are retained.",
+        });
       }
-  
+
       // Invalid option provided
-      return res.status(400).json({ Status: false, msg: "Invalid option provided." });
+      return res
+        .status(400)
+        .json({ Status: false, msg: "Invalid option provided." });
     } catch (error) {
-      if (error.message.includes("error is not defined") || error.message.includes("Slot not found")) {
-        console.error("Error in Updating Invalid Slot Id", error);
+      if (
+        error.message.includes("error is not defined") ||
+        error.message.includes("Slot not found")
+      ) {
+        console.error("Error in Deleting, Invalid Slot Id", error);
         return res.status(404).json({ Status: false, msg: "Invalid SlotId" });
       }
-      console.error("Error updating feature:", error);
+      console.error("Error deleting SlotById:", error);
       res.status(500).json({
         Status: false,
         msg: "Internal Server Error: " + error.message,
       });
     }
-  }
+  },
 };
 
 module.exports = ProductController;

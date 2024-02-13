@@ -30,7 +30,7 @@ const productDetailsValidation = (productName, productDescription, advanceBookin
     }
 
     // Validate the bookingCategory
-    if(!(bookingCategory==1 || bookingCategoryId==2)){
+    if(!(bookingCategoryId==1 || bookingCategoryId==2)){
         return { isValid: false, message: 'Booking Category Id has two option only either 1(slot) or Either 2(dayWise)' };
 
     }
