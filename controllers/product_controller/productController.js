@@ -557,70 +557,57 @@ const ProductController = {
     }
   },
   deleteSlotById: async (req, res) => {
+    // In this function we are deleting entire booking if any particular slot is deleting 
     let slotId = req.params.id;
-    const { option, message } = req.body;
+    const { message,bookingCategoryId } = req.body;
 
     try {
       // Validation checks
-      if (!option) {
-        return res.status(400).json({
-          Status: false,
-          msg: "Please provide an option for deleting the slot.",
-        });
-      }
-      // Check if the option is 'cancelBookedSl' and if there is no message provided
-      if (option == "cancelBookedSlots" && !message) {
+      
+      // Check if there is no message provided
+      if (!message) {
         // If the above condition is true, return a bad request response with a message
         return res.status(400).json({
           Status: false, // Indicates the status of the request
           msg: "Please provide a message for cancelling booked slots.", // The error message to be sent to the client
         });
       }
-
-      // Option 1: Cancel all associated bookings for that SlotId
-      if (option === "cancelBookedSlots") {
-        // Find all bookings associated with the given slotId
-        const bookingIds = await BookingsMaster.findAllBookingsBySlotId(slotId);
-        // Check if there are any bookings associated with the slotId
-        if (bookingIds.length !== 0) {
-           // Create a message to be sent to the user
-          const cancelledMsg =
-            "The slot has been deleted due to the following reason:\n" +
-            message;
-          // Cancel the bookings with the given bookingIds and update their status to 'cancelledByAdmin'(statusId:6)
-          const updateStatus = await BookingsMaster.cancelBookingsByAdmin(bookingIds,6,cancelledMsg);
-          console.log(updateStatus);
+      
+      if(bookingCategoryId==1){
+         // Find all bookings associated with the given slotId
+         const confirmedBookingIds = await BookingsMaster.findAllConfirmBookingsBySlotId(slotId);
+         // Check if there are any bookings associated with the slotId
+         if (confirmedBookingIds.length !== 0) {
+           // Cancel the bookings with the given bookingIds and update their status to 'cancelledByAdmin'(statusId:6)
+           const updateStatus = await BookingsMaster.cancelBookingsByAdmin(confirmedBookingIds,6,message);
+           console.log(updateStatus);
+         }
+      }
+      // In Hotel or dayWise System if any ongoing booking is there than we can not cancel it.
+      // So for that we comparing the bookingFromDateTime with the current date if it is greater than this than we can delete that bookings.
+      else if(bookingCategoryId==2){
+          
+        const futureConfirmedBookingIds = await BookingsMaster.findAllFutureConfirmBookingsBySlotId(slotId);
+        if(futureConfirmedBookingIds.length>0){
+          
+          //  Cancel the bookings with the given bookingIds and update their status to 'cancelledByAdmin'(statusId:6)
+          // Also decreasing the bookedSlot in slotmaster table.
+           const updateStatus = await BookingsMaster.cancelBookingsByAdmin(futureConfirmedBookingIds,6,message);
+           console.log(updateStatus);
         }
+        console.log(futureConfirmedBookingIds)
 
-        //Now delete the slot from the Slotmaster table
-        const slotDeleteResult=await Slot.deleteSlotById(slotId);
-
-
-        //  console.log(result)
-
-        return res.status(200).json({
-          Status: true,
-          msg: "All bookings for the slot have been cancelled.",
-        });
+        
       }
-      // Option 2: Keep already booked slots but remove Slot from slotmaster table and keep entry in Booking Master
-      // In this option, we delete the slot entry from the SlotMaster table but retain the bookings associated with this slot.
-      // The admin is responsible for handling these existing bookings.
-
-      if (option === "keepBookedSlots") {
-        // Log the deletion and update slot status
-        const deleteStatus = await Slot.deleteSlotById(slotId);
-
-        return res.status(200).json({
-          Status: true,
-          msg: "Slot has been deleted. Already booked bookings for this slot are retained.",
-        });
-      }
-
-      // Invalid option provided
-      return res
-        .status(400)
-        .json({ Status: false, msg: "Invalid option provided." });
+      // Call the deleteSlot method from the SlotMaster class to delete the slot based upon the slot Id that was passed as an argument
+      // Delete the Slot from DB
+      const deletedSlot = await Slot.deleteSlotById(slotId);
+      // Return a success response
+      return res.status(200).json({
+        Status: true,
+        msg: "All bookings for the slot have been cancelled Except the OnGoing Bookings and Slot Successfully Deleted!",
+      });
+  
     } catch (error) {
       if (
         error.message.includes("error is not defined") ||

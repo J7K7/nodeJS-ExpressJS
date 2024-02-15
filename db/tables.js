@@ -25,7 +25,6 @@ const announcementsTable = `CREATE TABLE IF NOT EXISTS announcements (
     status int DEFAULT NULL,
     grandTotal double DEFAULT NULL,
     timestamp timestamp NULL DEFAULT NULL,
-    cancel_message text DEFAULT NULL,
     PRIMARY KEY (bookingId),
     KEY status_idx (status),
     CONSTRAINT status FOREIGN KEY (status) REFERENCES booking_statuses (statusId)
@@ -33,23 +32,28 @@ const announcementsTable = `CREATE TABLE IF NOT EXISTS announcements (
 `;
 
   const bookProductTable = `CREATE TABLE IF NOT EXISTS bookproduct (
-    id 
+    id int NOT NULL AUTO_INCREMENT,
     productId int NOT NULL,
     quantity int NOT NULL,
-    slotId int NOT NULL,
+    statusId int,
+    slotId int,
     productTotal float DEFAULT NULL,
     bookingId int NOT NULL,
     bookingDate date DEFAULT NULL,
     slotFromDateTime datetime DEFAULT NULL,
     slotToDateTime datetime DEFAULT NULL,
     price float DEFAULT NULL,
+    cancel_message text DEFAULT NULL,
+    PRIMARY KEY (id), -- Define 'id' as the primary key
+    KEY statusId_idx (statusId),
     KEY bookingIdx_idx (bookingId),
     KEY productId_idx (productId),
     KEY slotId_idx (slotId),
+    CONSTRAINT fk_bookproduct_statusId FOREIGN KEY (statusId) REFERENCES booking_statuses (statusId),
     CONSTRAINT fk_bookproduct_bookingId FOREIGN KEY (bookingId) REFERENCES bookingsmaster (bookingId),
     CONSTRAINT fk_bookproduct_productId FOREIGN KEY (productId) REFERENCES productmaster (productId),
     CONSTRAINT fk_bookproduct_slotId FOREIGN KEY (slotId) REFERENCES slotmaster (slotId)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
   `
 
   const carouselImageTable = `
