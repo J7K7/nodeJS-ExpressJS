@@ -730,7 +730,7 @@ const ProductController = {
          if (confirmedBookingIds.length !== 0) {
            // Cancel the bookings with the given bookingIds and update their status to 'cancelledByAdmin'(statusId:6)
            const updateStatus = await BookingsMaster.cancelBookingsByAdmin(confirmedBookingIds,6,message);
-           console.log(updateStatus);
+          //  console.log(updateStatus);
          }
       }
       // In Hotel or dayWise System if any ongoing booking is there than we can not cancel it.

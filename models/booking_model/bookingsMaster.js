@@ -11,13 +11,13 @@ class BookingsMaster {
     bookingDate,
     booking_fromDatetime,
     booking_toDatetime,
-    status,
+    statusId,
     grandTotal
   ) {
     this.bookingDate = bookingDate;
     this.booking_fromDatetime = booking_fromDatetime;
     this.booking_toDatetime = booking_toDatetime;
-    this.status = status;
+    this.statusId = statusId;
     this.grandTotal = grandTotal;
   }
 
@@ -27,13 +27,13 @@ class BookingsMaster {
                 bookingDate,
                 booking_fromDatetime,
                 booking_toDatetime,
-                status,
+                statusId,
                 grandTotal
             ) VALUES (
                 '${this.bookingDate}',
                 '${this.booking_fromDatetime}',
                 '${this.booking_toDatetime}',
-                '${this.status}',
+                '${this.statusId}',
                 '${this.grandTotal}'
             )
         `;
@@ -67,7 +67,7 @@ class BookingsMaster {
           SELECT DISTINCT bp.bookingId
           FROM bookingsmaster bm
           INNER JOIN bookproduct bp ON bm.bookingId = bp.bookingId
-          WHERE bp.productId = ? AND bp.statusId = 3
+          WHERE bp.productId = ? AND bm.statusId = 3 
         `;
   
         // Execute the query to fetch confirmed bookings
@@ -93,7 +93,7 @@ class BookingsMaster {
         FROM bookingsmaster bm
         JOIN bookproduct bp ON bm.bookingId = bp.bookingId
         WHERE bp.slotId = ?   
-        AND bm.status = 3      
+        AND bm.statusId = 3      
               `
         // Check That the SlotId is valid Or not.If it's not then Throw an Error
         const slot = await Slot.getSlotById(slotId);
@@ -109,7 +109,7 @@ class BookingsMaster {
     }
   
     // This function finds all future confirmed bookings by slotId
-    // It returns an array of bookingIds for future confirmed bookings that have a status of 3 (confirmed)
+    // It returns an array of bookingIds for future confirmed bookings that have a statusId of 3 (confirmed)
     // and a booking_fromDatetime greater than the current date and time
     static async findAllFutureConfirmBookingsBySlotId(slotId) {
       // Get the current date and time in the specified format
@@ -121,7 +121,7 @@ class BookingsMaster {
           FROM bookingsmaster bm
           JOIN bookproduct bp ON bm.bookingId = bp.bookingId
           WHERE bp.slotId = ?   
-          AND bm.status = 3     
+          AND bm.statusId = 3     
           AND bm.booking_fromDatetime > ? 
       `;
        // Check That the SlotId is valid Or not.If it's not then Throw an Error
@@ -138,23 +138,23 @@ class BookingsMaster {
     }
   
     //Cancels bookings by admin for the specified booking IDs
-    static async cancelBookingsByAdmin(bookingIds, status, message) {
+    static async cancelBookingsByAdmin(bookingIds, statusId, message) {
       try {
-          // In this we are changing the status of the bookingmaster and deacresing the quantity  of slots in  slotmaster table
+          // In this we are changing the statusId of the bookingmaster and deacresing the quantity  of slots in  slotmaster table
       
           for (const bookingId of bookingIds) {
               const query = `
                 UPDATE bookingsmaster AS bm
                 JOIN bookproduct AS bp ON bm.bookingId = bp.bookingId
                 JOIN slotmaster AS sm ON bp.slotId = sm.slotId
-                SET bm.status = ?,
+                SET bm.statusId = ?,
                     bm.cancel_message = ?,
                     sm.slotBooked = sm.slotBooked - bp.quantity 
                 WHERE bm.bookingId = ?
               `;
               
               // Prepare the values to be bound to the query
-              const values = [status, message, bookingId];
+              const values = [statusId, message, bookingId];
               
               // Execute the query for each booking ID
               await executeQuery(query, values);
