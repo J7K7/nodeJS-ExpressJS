@@ -177,13 +177,36 @@ class Product {
         // Return the first product found
         return result[0];
       } else {
-        // If product not found, return null
-        return null;
+        // If product not found
+        throw new Error("Product not found");
       }
     } catch (error) {
       // Handle any errors that occur during the query execution
       console.error("Error finding product by ID:", error.message);
       throw error; // Throw the error to propagate it up the call stack
+    }
+  }
+  // Update Product Status like activate , deactivate 
+  static async updateProductStatusById(productId, status) {
+    try {
+      // Construct SQL query to update slot status by ID
+      const updateQuery = `
+        UPDATE productmaster
+        SET isActive = ?
+        WHERE productId = ?
+      `;
+
+      // Execute the update query to update the slot status
+      const result = await executeQuery(updateQuery, [status, productId]);
+
+      // Check if the update was successful
+      if (result.affectedRows === 0) {
+        throw new Error("Product not found");
+      }
+      return true;
+    } catch (error) {
+      // Handle errors
+      throw error;
     }
   }
 
@@ -436,7 +459,7 @@ class Product {
           `Error in adding slot Invalid slotData or Empty slotData`
         );
       }
-      // Same reson as explained in linkfeature function
+      // Same reason as explained in linkfeature function
       /* // Create an array of promises for the relation queries
       const linkPromises = slotIds.map((slotId) => {
         const linkQuery = `INSERT INTO slotproduct_relation (productId, slotId) VALUES (?, ?)`;
@@ -469,6 +492,31 @@ class Product {
       // otherwise error will be In linking product with slots
       console.error("Error linking product with slots:", error);
       throw new Error(`Error In linking product with slots: ${error.message}`);
+    }
+  }
+
+  static async deleteProductById(productId){
+    try {
+      // Construct the SQL query to update the product's isDeleted flag
+      const query = `
+        UPDATE productmaster
+        SET isDeleted = 1
+        WHERE productId = ?
+      `;
+
+      // Execute the SQL query with the provided product ID
+      const result = await executeQuery(query, [productId]);
+
+      // Return the number of rows affected (should be 1 if deletion was successful)
+      if (!!result && result.affectedRows > 0) {
+        return true;
+      } else {
+        // If no rows were affected, the product with the provided ID was not found
+        throw new Error('Product not found');
+      }
+    } catch (error) {
+      // If an error occurs during the database operation, throw an error with details
+      throw new Error(`Error deleting product: ${error.message}`);
     }
   }
 }

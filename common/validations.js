@@ -57,7 +57,11 @@ const slotValidation = (slotData, bookingCategoryId) => {
             return { isValid: false, message: 'Invalid slotData. checkOut Time must be before or same as checkInTime.' };
         }
     }
+    // If none of the above conditions are met, return an object indicating that the slotData is valid
     return { isValid: true };
+
+
+
 };
 
 // Function to validate feature data

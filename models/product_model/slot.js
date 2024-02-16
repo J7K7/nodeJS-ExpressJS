@@ -4,6 +4,8 @@ const BookProduct = require("../booking_model/bookProduct");
 const Feature = require("./feature");
 const ProductImage = require("./image");
 const moment = require("moment");
+const Product = require("./product");
+
 
 // This is the Model for the productMaster Table .
 class Slot {
@@ -44,6 +46,39 @@ class Slot {
       console.error("Error in adding slot:", error);
       throw error; // throw the error to be caught by the calling function
     }
+  }
+  //This function is for Adding single slot into particular product mostly applicable for bookingCategory 1 (slotBAsed)
+  static async addSingleSlotByProductId(productId,slotData){
+    try {
+     //Combine Date and Time for convertin into "YYYY-MM-DD HH:MM:SS"
+      const slotFromDateTime = combineDateTime(slotData.date, slotData.fromTime);
+      const slotToDateTime = combineDateTime(slotData.date,slotData.toTime);
+  
+      const newSlot= new Slot(slotData.date,slotFromDateTime,slotToDateTime,slotData.capacity,slotData.price,1);//Setting slotDetails
+      const slotId = await newSlot.addSlot();
+      if(!slotId){
+        throw new Error ( "Failed to create Slot");
+      }
+      // Query for the linking this slotId with the Product Id inside the slotproduct_relation
+      const insertQuery=`INSERT INTO slotproduct_relation (productId, slotId)
+      VALUES (${productId}, ${slotId})`;
+      //execute the query
+      const result = await executeQuery(insertQuery);
+
+      return newSlot;
+  } catch (error) {
+      
+        // Handle any errors that occur during the process
+      // if error in adding slot than it is directly thrown from here
+      if (error.message.includes("Error in adding slot")) {
+        throw error;
+      }
+      // otherwise error will be In linking product with slots
+      
+      else 
+      {console.error("Error linking product with slot:", error);
+        throw new Error(`Error In linking product with slot: ${error.message}`);}
+  }
   }
   //getSlot by ID
   static async getSlotById(slotId) {
@@ -100,14 +135,14 @@ class Slot {
       const result = await executeQuery(updateQuery, [status, slotId]);
 
       // Check if the update was successful
-      if (result.affectedRows === 1) {
+      if (result.affectedRows == 1) {
         return true; // Slot status updated successfully
       } else {
-        throw new Error("Failed to update slot status.");
+        throw new Error("No slot Found with This slotId");
       }
     } catch (error) {
       // Handle errors
-      throw new Error(`Error updating slot status: ${error.message}`);
+      throw error
     }
   }
 
@@ -155,11 +190,11 @@ class Slot {
       if (result.affectedRows === 1) {
         return true; // Slot updated successfully
       } else {
-        throw new Error("Failed to update slot details.");
+        throw new Error("Slot Not Found.");
       }
     } catch (error) {
       // Handle errors
-      throw new Error(`Error updating slot: ${error.message}`);
+      throw error
     }
   }
   /**
@@ -172,9 +207,8 @@ class Slot {
    */
   static async deleteSlotById(slotId) {
     try {
-      // Get the original slot details using the provided slot ID
-      let productId = await this.findProductIdBySlotId(slotId);
-      console.log(productId);
+      //validate that slotId is valid or not 
+      let slotDetails = await this.getSlotById(slotId);
 
       // SQL query to delete the slot from the slotproduct_relation table
       const deleteRelationQuery = `DELETE FROM slotproduct_relation WHERE slotId = ?`;

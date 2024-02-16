@@ -262,6 +262,102 @@ const ProductController = {
       });
     }
   },
+  updateProductStatusById:async (req,res)=>{
+    // For updating the status of the  product by id.
+    const productId = req.params.id;
+    const { status } = req.body; // status: 1 for activate, 0 for deactivate
+
+    try {
+      // Check if the status is provided
+      if (status == null) {
+        return res.status(400).json({
+          Status: false,
+          msg: "Please provide the new status of the product.",
+        });
+      }
+
+      // Validate the product ID
+      if (!Number.isInteger(Number(productId)) || Number(productId) <= 0) {
+        return res.status(400).json({
+          Status: false,
+          msg: "Invalid product ID. Please provide a positive integer.",
+        });
+      }
+
+      // Update the product status by its ID
+      const result = await Product.updateProductStatusById(productId, status);
+
+      // Send success response
+      return res.status(200).json({
+        Status: true,
+        msg: `Product ${status==1 ? "activated" : "deactivated"} successfully.`,
+      });
+    }catch (error) {
+      // Handle errors
+      if (error.message.includes("error is not defined") || error.message.includes("Product not found")) {
+        console.error("Error in updating Invalid Product Id", error);
+        return res
+          .status(400)
+          .json({ Status: false, msg: "Invalid ProductId: " });
+      }
+      console.error("Error updating product status:", error);
+      return res.status(500).json({
+        Status: false,
+        msg: "Internal Server Error: " + error.message,
+      });
+    }
+  },
+  deleteProductById: async (req,res)=>{
+    // Extract the Product ID from the request parameters
+    const productId = req.params.id;
+
+    try {
+      // Validate the product ID
+      if (!productId) {
+        return res.status(404).json({ Status: false, msg: "Invalid request." });
+      }
+      // Validate that productId is a positive integer
+      if (!Number.isInteger(Number(productId)) || Number(productId) <= 0) {
+        return res.status(400).json({
+          Status: false,
+          msg: "Invalid product ID. Please provide a positive integer.",
+        });
+      }
+
+      // First we check the if any current confirm booking for this productId is there or not?
+      const bookingIds = await BookingsMaster.findAllConfirmBookingsByProductId(productId);
+      
+      // If yes then send the bookingId's and Message that You can not delete this  product because it has been assigned to some users.
+      // Check if the product has any associated bookings
+      if (bookingIds && bookingIds.length > 0) {
+        // If bookings exist, return a conflict response with booking details
+        return res.status(409).json({
+          Status: false,
+          msg: `Cannot delete the product because it has bookings.`,
+          bookingIds: bookingIds
+        });
+      }
+
+      // Delete the product using the product ID
+      const result = await Product.deleteProductById(productId);
+      return res
+        .status(200)
+        .json({ Status: true, msg: "product deleted successfully." });
+    } catch (error) {
+      // Handle errors
+      if (error.message.includes("error is not defined") || error.message.includes("Product not found")) {
+        console.error("Error in Deleting Invalid Product Id", error);
+        return res
+          .status(400)
+          .json({ Status: false, msg: "Invalid ProductId: " });
+      }
+      console.error("Error deleting product:", error);
+      return res.status(500).json({
+        Status: false,
+        msg: "Internal Server Error: " + error.message,
+      });
+    }
+  },
   updateFeature: async (req, res) => {
     try {
       const featureId = req.params.id;
@@ -380,7 +476,7 @@ const ProductController = {
   },
   deleteImageById: async (req, res) => {
     // Extract the image ID from the request parameters
-    const imageId = req.params.id;
+    const productId = req.params.id;
 
     try {
       // Validate the image ID
@@ -458,6 +554,61 @@ const ProductController = {
       });
     }
   },
+  addSingleSlotByProductId : async (req, res) => {
+    //Adding new slot for particular product mostly applicable for bookingCategory 1 (slotBased)
+    const {
+      slotDate,
+      slotFromDateTime,
+      slotToDateTime,
+      slotOriginalCapacity,
+      slotPrice,
+      bookingCategoryId,
+    } = req.body;
+    const productId = req.params.id;
+    try {
+      // Check if required parameters are provided and apply slotValidations
+      const slotData = {
+        date:slotDate,
+        price: slotPrice,
+        capacity: slotOriginalCapacity,
+        fromTime: slotFromDateTime,
+        toTime: slotToDateTime,
+      };
+      // passing slotData in array form beacause slot validation take slotData in array form  only
+      const slotValidationResult = slotValidation(
+        [slotData],
+        bookingCategoryId
+      );
+      if (!slotValidationResult.isValid)  {
+        return res
+          .status(400)
+          .json({ Status: false, msg: slotValidationResult.message });
+      }
+      if(!moment(slotDate, 'YYYY-MM-DD', true).isValid()){
+        return res .status(400).json({msg:"Invalid Slot date format please use YYYY/MM/DD", Status: false});
+      }
+      // Validate the ProductId is Valid Or not ?
+      const product = await Product.findProductById(productId);
+        // Call the addSingleSlotByProductId method from the Slot model
+      const newSlot = await Slot.addSingleSlotByProductId(productId, slotData);
+
+        // Send a success response
+      return res.status(201).json({ Status: true, msg: 'Slot added successfully', data: newSlot });
+    } catch (error) {
+      // Handle errors
+      if (error.message.includes("error is not defined") || error.message.includes("Product not found")) {
+        console.error(" Invalid Product Id", error);
+        return res
+          .status(400)
+          .json({ Status: false, msg: "Invalid ProductId: " });
+      }
+      console.error("Error in adding product:", error);
+      return res.status(500).json({
+        Status: false,
+        msg: "Internal Server Error: " + error.message,
+      });
+    }
+  },
   updateSlotById: async (req, res) => {
     const {
       slotFromDateTime,
@@ -475,7 +626,6 @@ const ProductController = {
         fromTime: slotFromDateTime,
         toTime: slotToDateTime,
       };
-      // slotData.push();
       // passing slotData in array form beacause slot validation take slotData in array form  only
       const slotValidationResult = slotValidation(
         [slotData],
@@ -494,6 +644,7 @@ const ProductController = {
           msg: "Invalid slot ID. Please provide a positive integer.",
         });
       }
+      
 
       // Call the updateSlotById method from the Slot model
       const result = await Slot.updateSlotById(
@@ -545,14 +696,13 @@ const ProductController = {
       // Send success response
       return res.status(200).json({
         Status: true,
-        msg: `Slot ${status ? "activated" : "deactivated"} successfully.`,
+        msg: `Slot ${status==1 ? "activated" : "deactivated"} successfully. This Changes Applicable for upcoming Bookings this not reflect in current Bookings`,
       });
     } catch (error) {
       // Handle errors
       return res.status(500).json({
         Status: false,
-        msg: `Failed to ${status ? "activate" : "deactivate"} slot.`,
-        error: error.message,
+        msg: `Failed to ${status==1 ? "activate" : "deactivate"} slot. : `+error.message ,
       });
     }
   },

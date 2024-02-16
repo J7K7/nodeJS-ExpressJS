@@ -65,7 +65,7 @@ router.delete('/deleteFeature/:id', ProductController.deleteFeatureById);
 
 router.delete('/deleteImage/:id', ProductController.deleteImageById);
 
-router.get('/addImage',productImagesUpload,ProductController.addProductImage);
+router.post('/addImage',productImagesUpload,ProductController.addProductImage);
 
 router.get('/getProductDetails/:id',ProductController.getProductDetailsById );//this
 
@@ -78,5 +78,11 @@ router.get('/getProductDetails/:id',ProductController.getProductDetailsById );
 router.put('/updateSlotStatus/:id',ProductController.updateSlotStatusById );
 
 router.delete('/deleteSlotById/:id',ProductController.deleteSlotById );
+
+router.post('/addSingleSlotByProductId/:id',ProductController.addSingleSlotByProductId);
+
+router.put('/updateProductStatus/:id',ProductController.updateProductStatusById );
+
+router.put('/deleteProduct/:id',ProductController.deleteProductById );
 
 module.exports = router;
