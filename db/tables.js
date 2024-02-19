@@ -125,6 +125,7 @@ const announcementsTable = `CREATE TABLE IF NOT EXISTS announcements (
     active_fromDate date NOT NULL,
     active_toDate date DEFAULT NULL,
     productCapacity int NOT NULL DEFAULT 1,
+    slotData TEXT,
     isActive tinyint DEFAULT NULL,
     isDeleted tinyint DEFAULT 0,
     PRIMARY KEY (productId),

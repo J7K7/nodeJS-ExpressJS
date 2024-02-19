@@ -47,6 +47,65 @@ class Slot {
       throw error; // throw the error to be caught by the calling function
     }
   }
+  // This function for the  Single Day slot's with particular Date adding into slotmaster table
+   // slotData is in string form json data we need to parse the that data into JSON
+  // currentDate is moment format  date or date string in "YYYY-MM-DD" format
+  static async addSingleDateSlot(slotData, currentDate, bookingCategoryId) {
+    const slotIds = [];
+     // Parse slotData into JSON format
+    const parsedSlotData = JSON.parse(slotData);
+    currentDate=moment(currentDate);
+    try {
+        if (bookingCategoryId == 1) {
+            for (const slotInfo of parsedSlotData) {
+                const { fromTime, toTime, capacity, price } = slotInfo;
+                const slotActive = 1;
+                const slot = new Slot(
+                    currentDate.format("YYYY-MM-DD"),
+                    combineDateTime(currentDate, fromTime),
+                    combineDateTime(currentDate, toTime),
+                    capacity,
+                    price,
+                    slotActive
+                );
+
+                try {
+                    const slotId = await slot.addSlot();
+                    slotIds.push(slotId);
+                } catch (error) {
+                    throw new Error(`Error in adding slot: ${error.message}`);
+                }
+            }
+        } else if (bookingCategoryId == 2) {
+            const { fromTime, toTime, capacity, price } = parsedSlotData[0];
+            const slotActive = 1;
+            const checkInTime = combineDateTime(currentDate, fromTime);
+            const nextDayDate = moment(currentDate).add(1, "day");
+            const checkOutTime = combineDateTime(nextDayDate, toTime);
+            const singleDaySlot = new Slot(
+                currentDate.format("YYYY-MM-DD"),
+                checkInTime,
+                checkOutTime,
+                capacity,
+                price,
+                slotActive
+            );
+
+            try {
+                const slotId = await singleDaySlot.addSlot();
+                slotIds.push(slotId);
+            } catch (error) {
+                throw new Error(`Error in adding slot: ${error.message}`);
+            }
+        }
+        return slotIds;
+    } catch (error) {
+        throw error;
+    }
+
+   
+}
+
   //This function is for Adding single slot into particular product mostly applicable for bookingCategory 1 (slotBAsed)
   static async addSingleSlotByProductId(productId,slotData){
     try {

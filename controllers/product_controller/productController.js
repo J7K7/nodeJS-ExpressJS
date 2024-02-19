@@ -81,7 +81,8 @@ const ProductController = {
         advanceBookingDuration,
         active_fromDate,
         active_toDate,
-        productCapacity
+        productCapacity,
+        slotData
       );
       // Storing The product info into product Master
       const productId = await newproduct.saveProduct();

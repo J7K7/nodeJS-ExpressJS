@@ -1,5 +1,6 @@
 const { combineDateTime } = require("../../common/dateFormat");
 const executeQuery = require("../../db/connection");
+const { slotMasterTable } = require("../../db/tables");
 const Feature = require("./feature");
 const ProductImage = require("./image");
 const Slot = require("./slot");
@@ -13,7 +14,8 @@ class Product {
     advanceBookingDuration,
     active_fromDate,
     active_toDate,
-    productCapacity
+    productCapacity,
+    slotData
   ) {
     this.productName = productName;
     this.productDescription = productDescription;
@@ -21,6 +23,7 @@ class Product {
     this.active_fromDate = active_fromDate;
     this.active_toDate = active_toDate;
     this.productCapacity = productCapacity;
+    this.slotData=slotData;
   }
 
   // Function to Save the product into the productMaster table.
@@ -35,9 +38,10 @@ class Product {
           active_fromDate,
           active_toDate,
           productCapacity,
+          slotData,
           isActive
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?,?, ?)
       `;
 
       // Array of values to be inserted into the query
@@ -48,6 +52,7 @@ class Product {
         this.active_fromDate,
         this.active_toDate,
         this.productCapacity,
+        this.slotData,
         1, // isActive set to 1 by default
       ];
 
@@ -339,6 +344,30 @@ class Product {
     }
   }
 
+  // Function To linking SlotIds with Particular ProductId;
+  static async linkSlotsWithProduct(productId, slotIds) {
+    try {
+        // Create an array of link query values by mapping each slotId to an array containing both the productId and the slotId.
+        const linkValues = slotIds.flatMap((slotId) => [productId, slotId]);
+
+        // Generate a SQL query for bulk insertion into the slotproduct_relation table.
+        const bulkInsertQuery = `
+            INSERT INTO slotproduct_relation (productId, slotId)
+            VALUES ${Array(slotIds.length).fill("(?, ?)").join(", ")}
+        `;
+
+        // Execute the bulk insert query with the linkValues array, which contains the flattened pairs of (productId, slotId).
+        await executeQuery(bulkInsertQuery, linkValues);
+
+        // Return success message or handle further logic if needed
+        return "Slots linked with product successfully.";
+    } catch (error) {
+        // If an error occurs during the linking process, throw an error
+        throw new Error(`Error linking slots with product: ${error.message}`);
+    }
+}
+
+
   // Function To add Intial slots into slot master for advance booking duration
   /* 
     Explanation of bookingCategory = slot:
@@ -379,12 +408,12 @@ class Product {
       // Create an array to store slotIds
       const slotIds = [];
 
-      // Parse slotData into JSON format
-      const parsedSlotData = JSON.parse(slotData);
 
       const currentDate = moment(active_fromDate);
+      // Need to add slots for active_fromDate to active_fromDate+duration-1(beacause we are adding slot for today also)
+      // let suppose stating date is 22 and advance booking duration is 5 days than slots will we added for 22+5-1 =26 till 26th date  .(22,23,24,25,26);
       const toDate = moment(active_fromDate).add(
-        advanceBookingDuration,
+        advanceBookingDuration-1,
         "days"
       );
       // Iterate over the date range and create slots for each day according to bookingCategory
@@ -392,66 +421,11 @@ class Product {
         currentDate.isSameOrBefore(toDate, "day") &&
         currentDate.isSameOrBefore(active_toDate, "day")
       ) {
-        // Check the booking category
-        // 1st Type Booking Category = "slot";
-        if (bookingCategoryId == 1) {
-          //Adding Slots for slot booking Category
-          // Create slots for the current date using iterate through parsedSlotData
-          // Here We adding Slots For Each Day of Active From Date to  Advance Duration Days
-          for (const slotInfo of parsedSlotData) {
-            const { fromTime, toTime, capacity, price } = slotInfo;
-            const slotActive = 1; // By default  set status as Active
-
-            // Create a new instance of the Slot class using the provided data
-            //Inside combineDateTime We add the date into slottime and combine them
-            const slot = new Slot(
-              currentDate.format("YYYY-MM-DD"),
-              combineDateTime(currentDate, fromTime),
-              combineDateTime(currentDate, toTime),
-              capacity,
-              price,
-              slotActive
-            );
-
-            try {
-              // Add the slot to the database and get its ID
-              const slotId = await slot.addSlot();
-              slotIds.push(slotId);
-            } catch (error) {
-              // If there's an error during slot creation, throw immediately
-              throw new Error(`Error adding slot: ${error.message}`);
-            }
-          }
-        } else if (bookingCategoryId == 2) {
-          //2nd Type of Booking Category = dayWise
-
-          //Create Single Day Slot for day wise Booking Category
-          const { fromTime, toTime, capacity, price } = parsedSlotData[0];
-          const slotActive = 1;
-          // In This fromTime acts as CheckIn time and
-          // Where to Time is next day's time so we are adding next date into this
-          const checkInTime = combineDateTime(currentDate, fromTime);
-          const nextDayDate = moment(currentDate).add(1, "day");
-          const checkOutTime = combineDateTime(nextDayDate, toTime);
-          const singleDaySlot = new Slot(
-            currentDate.format("YYYY-MM-DD"),
-            checkInTime,
-            checkOutTime,
-            capacity,
-            price,
-            slotActive
-          );
-          try {
-            // Add the slot to the database and get its ID
-            const slotId = await singleDaySlot.addSlot();
-            slotIds.push(slotId);
-          } catch (error) {
-            // If there's an error during slot creation, throw immediately
-            throw new Error(`Error adding slot: ${error.message}`);
-          }
-        }
-
-        // Move to the next day
+        // Adding slots into the slotmaster table 
+        const singleDaySlotIds=await Slot.addSingleDateSlot(slotData,currentDate,bookingCategoryId);
+        slotIds.push(...singleDaySlotIds);
+        // console.log(slotIds)
+        // Move to the next day        
         currentDate.add(1, "day");
       }
       if (slotIds.length == 0) {
@@ -459,39 +433,12 @@ class Product {
           `Error in adding slot Invalid slotData or Empty slotData`
         );
       }
-      // Same reason as explained in linkfeature function
-      /* // Create an array of promises for the relation queries
-      const linkPromises = slotIds.map((slotId) => {
-        const linkQuery = `INSERT INTO slotproduct_relation (productId, slotId) VALUES (?, ?)`;
-        const linkValues = [productId, slotId];
-        return executeQuery(linkQuery, linkValues);
-      });
-
-      // Use Promise.all to wait for all promises to resolve
-      await Promise.all(linkPromises); */
-
-      // Create an array of link query values by mapping each slotId to an array containing both the productId and the slotId.
-      const linkValues = slotIds.flatMap((slotId) => [productId, slotId]);
-
-      // Generate a SQL query for bulk insertion into the slotproduct_relation table.
-      const bulkInsertQuery = `
-        INSERT INTO slotproduct_relation (productId, slotId)
-        VALUES ${Array(slotIds.length).fill("(?, ?)").join(", ")}
-      `;
-
-      // Execute the bulk insert query with the linkValues array, which contains the flattened pairs of (productId, slotId).
-      await executeQuery(bulkInsertQuery, linkValues);
+      const linkingResult=await this.linkSlotsWithProduct(productId,slotIds);
 
       return true; // Successfully linked slots with the product
     } catch (error) {
       // Handle any errors that occur during the process
-      // if error in adding slot than it is directly thrown from here
-      if (error.message.includes("Error in adding slot")) {
-        throw error;
-      }
-      // otherwise error will be In linking product with slots
-      console.error("Error linking product with slots:", error);
-      throw new Error(`Error In linking product with slots: ${error.message}`);
+      throw error;
     }
   }
 
