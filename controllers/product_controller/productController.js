@@ -261,6 +261,8 @@ const ProductController = {
         }
       });
       // console.log(productDetails);
+      const slots=await Slot.getSlotsById(200);
+      console.log(slots);
 
       // return productDetails;
       res.status(200).json({ Status: true, productData });
@@ -725,6 +727,44 @@ const ProductController = {
       });
     }
   },
+  updateProductDetails : async (req, res) => {
+    try {
+        // console.log(req.params['productId']);
+        const {productName, productDescription, active_toDate, productCapacity, advanceBookingDuration } = req.body;
+        const productId = req.params.id;
+        // console.log(productId);
+        if (!productId || isNaN(parseInt(productId))) throw "Invalid Product ID";
+        if (!productCapacity || !advanceBookingDuration ){
+            return res.status(400).json({msg: "Missing fields!", Status : false});
+        }
+        if(isNaN(parseInt(productCapacity)) || isNaN(parseInt(advanceBookingDuration))){
+            return res.status (400).json({msg:"Fields must be numbers!" ,Status :false})
+        }
+        if(advanceBookingDuration <= 0){
+          return res.status (400).json({msg:"advanceBookingDuration can not be zero  or negative!" ,Status :false})
+        }
+        // Validate the incoming data
+        if ( !productName || !productDescription || !active_toDate || !productCapacity || !advanceBookingDuration ) {
+            return res.status(400).json({msg: "Please include all fields", Status:  false});
+        };
+        //validate active_toDate
+        if(!moment(active_toDate, 'YYYY-MM-DD', true).isValid()){
+            return res .status(400).json({msg:"Invalid active to date format please use YYYY/MM/DD", Status: false});
+        }
+        //validate active_toDate, it should be greater than current  date + advanceBookingDuration
+        if(!moment(active_toDate).isAfter(moment().add(advanceBookingDuration, 'days').format('YYYY-MM-DD'))){
+               return res.status(400).json({msg : `The Active To Date Should Be Greater Than Today's Date Plus ${advanceBookingDuration} Days`, Status : false});
+        }
+        const result = await Product.updateProductDetailsByProductId(productId , productName, productDescription, active_toDate, productCapacity )
+        if (!result.affectedRows > 0 ) {
+            return res.status(400).json({msg: "No product found with the provided id" ,Status:false})
+        }
+        return res.status(200).json({msg: "product updated successfully", Status: true})
+    } catch (error) {
+        console.log("Error in updating Product Details ", error);
+        return res.status(500).json({ msg: error.message || error, Status: false });
+    }
+} ,
 
   deleteSlotById: async (req, res) => {
     // In this function we are deleting entire booking if any particular slot is deleting 

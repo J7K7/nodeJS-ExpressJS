@@ -238,7 +238,23 @@ class Product {
       throw error;
     }
   }
-
+  // Update Product's Info like productName , description;
+  // admin can change the activeToDate untill the current Date + adavnceBookingDuration
+  static async updateProductDetailsByProductId (productId , productName, productDescription, active_toDate, productCapacity )  {
+    try {
+      let query = "update productmaster set productName=?, productDescription=?, active_toDate=?, productCapacity=? where productId = ?"
+      let queryparam = [ productName, productDescription, active_toDate, productCapacity, productId];
+      const result = await executeQuery(query, queryparam);
+      if (!result || !result.affectedRows > 0) {
+        throw new Error("Updation of Product Information Failed");
+      }
+      return result; 
+    } catch (error) {
+      console.log("Error in Updating Product Info :", error);
+      throw error;
+    }
+  }
+  
   // Function to Linking the featureData with the Product class
   static async linkProductWithFeatures(productId, featureData) {
     try {

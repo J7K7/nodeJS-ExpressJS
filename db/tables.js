@@ -1,3 +1,4 @@
+
 const announcementsTable = `CREATE TABLE IF NOT EXISTS announcements (
     announcementId int NOT NULL AUTO_INCREMENT,
     title text,
@@ -132,11 +133,11 @@ const announcementsTable = `CREATE TABLE IF NOT EXISTS announcements (
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
   `
-
-  const roleTable = `
+  const roleTable = `   
   CREATE TABLE IF NOT EXISTS role (
     roleId int NOT NULL AUTO_INCREMENT,
     roleName varchar(45) NOT NULL,
+    isDeleted tinyint DEFAULT 0,
     PRIMARY KEY (roleId)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
   `
@@ -189,6 +190,7 @@ const announcementsTable = `CREATE TABLE IF NOT EXISTS announcements (
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
   `
 
+
   const userRoleRelationTable = `
   CREATE TABLE IF NOT EXISTS userrole_relation (
     userId int DEFAULT NULL,
@@ -215,18 +217,18 @@ const announcementsTable = `CREATE TABLE IF NOT EXISTS announcements (
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
   `
 
+
   const userMasterTable = `
   CREATE TABLE IF NOT EXISTS usermaster (
     userId int NOT NULL AUTO_INCREMENT,
-    username varchar(55) DEFAULT NULL,
     email varchar(255) DEFAULT NULL,
     password text NOT NULL,
     firstName varchar(45) NOT NULL,
     lastName varchar(45) NOT NULL,
     phoneNumber varchar(14) NOT NULL,
-    profilePic varchar(255), 
-    isDeleted tinyint DEFAULT NULL,
-    timestamp datetime DEFAULT NULL,
+    profilePic text, 
+    isDeleted tinyint DEFAULT 0,
+    timestamp datetime DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (userId),
     UNIQUE KEY phoneNumber_UNIQUE (phoneNumber),
     UNIQUE KEY email_UNIQUE (email)

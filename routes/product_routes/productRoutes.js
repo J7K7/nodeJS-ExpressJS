@@ -85,4 +85,6 @@ router.put('/updateProductStatus/:id',ProductController.updateProductStatusById 
 
 router.put('/deleteProduct/:id',ProductController.deleteProductById );
 
+router.put('/updateProductDetails/:id',ProductController.updateProductDetails);
+
 module.exports = router;

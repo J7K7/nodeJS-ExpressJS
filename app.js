@@ -1,12 +1,15 @@
+require('dotenv').config();
 var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
 var logger = require('morgan');
-require('dotenv').config();
+const userRoutes = require('./routes/user_routes/userRoutes')
+const loginRoute =  require('./routes/user_routes/loginRoute')
+const adminRoutes =  require('./routes/user_routes/adminRoutes')
 var productRouter=require("./routes/product_routes/productRoutes")
-const formData =require("express-form-data");
+// const formData =require("express-form-data");
 var app = express();
-require('dotenv').config();
+
 
 
 require('./db/db');
@@ -17,6 +20,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 // app.use('/images', express.static(path.join(__dirname, 'images')));
+app.use('/', loginRoute)
+app.use('/user', userRoutes)
+app.use('/admin', adminRoutes)
 app.use('/product',productRouter);
 
 // console.log(body);

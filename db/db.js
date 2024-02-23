@@ -73,6 +73,8 @@ async function createTables() {
     const  category2Query=`INSERT INTO Booking_Category (booking_category_name, isSelected) VALUES ('dayWise', false)`;
     await connection.execute(category1Query);
     await connection.execute(category2Query);
+    
+    //we need to add admin roles and all necessary permission in all related tables
 
 
   } catch (error) {
