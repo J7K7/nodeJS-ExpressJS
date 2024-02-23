@@ -110,10 +110,11 @@ class BookingsMaster {
   
     // This function finds all future confirmed bookings by slotId
     // It returns an array of bookingIds for future confirmed bookings that have a statusId of 3 (confirmed)
-    // and a booking_fromDatetime greater than the current date and time
+    // and a booking_fromDatetime greater than the current date and time than it means that this booking not started yet.
     static async findAllFutureConfirmBookingsBySlotId(slotId) {
       // Get the current date and time in the specified format
-      const currentDate = moment().startOf("day").format("YYYY-MM-DD HH:mm:ss");
+      const currentDate = moment().format("YYYY-MM-DD HH:mm:ss");
+      // console.log(currentDate)
   
       // Construct the SQL query to find future confirmed bookings by slot ID
       const query = `

@@ -8,6 +8,12 @@ const productDetailsValidation = (productName, productDescription, advanceBookin
     if (productName.length > 100) {
         return { isValid: false, message: 'The name of the product should not exceed 100 characters.' };
     }
+    if(productCapacity<=0){
+        return { isValid: false, message: 'productCapacity Can not be zero' };
+    }
+    if(advanceBookingDuration<=0){
+        return { isValid: false, message: 'advance BookingDuration Can not be zero' };
+    }
 
     // Validate date format (YYYY-MM-DD)
     if (!moment(active_fromDate, 'YYYY-MM-DD', true).isValid() || !moment(active_toDate, 'YYYY-MM-DD', true).isValid()) {
@@ -34,6 +40,7 @@ const productDetailsValidation = (productName, productDescription, advanceBookin
         return { isValid: false, message: 'Booking Category Id has two option only either 1(slot) or Either 2(dayWise)' };
 
     }
+    
 
     return { isValid: true };
 };

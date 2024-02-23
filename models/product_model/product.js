@@ -73,7 +73,7 @@ class Product {
       throw error; // Throw the error to propagate it up the call stack
     }
   }
-  // Get All ProductDetails With Images And Feature 
+  // Get All ProductDetails With Images And Feature not deleted products
   static async getAllProductDetailsWithImagesAndFeatures() {
     try {
         // SQL query to fetch all product details with images and features
@@ -156,7 +156,7 @@ class Product {
       throw error;
     }
   }
-  // Find Product By id
+  // Find Product By id in productMaster
   static async findProductById(productId) {
     try {
       // SQL query to fetch a product by its ID
@@ -190,6 +190,30 @@ class Product {
       console.error("Error finding product by ID:", error.message);
       throw error; // Throw the error to propagate it up the call stack
     }
+  }
+  // check Product existence By productName 
+  static async findProductCountByName(productName){
+    try {
+      // SQL query to count the number of products with the given name
+      const selectQuery = `
+          SELECT COUNT(*) AS productCount
+          FROM productmaster 
+          WHERE productName = ?
+      `;
+
+      // Execute the query and await the result
+      const result = await executeQuery(selectQuery, [productName]);
+
+      // Extract the product count from the result
+      const productCount = result[0].productCount;
+
+      // Return the product count
+      return productCount;
+  } catch (error) {
+      // Handle any errors that occur during the query execution
+      console.error("Error finding product count by name:", error.message);
+      throw error; // Throw the error to propagate it up the call stack
+  }
   }
   // Update Product Status like activate , deactivate 
   static async updateProductStatusById(productId, status) {

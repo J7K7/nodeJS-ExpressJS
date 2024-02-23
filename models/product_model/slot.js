@@ -123,7 +123,7 @@ class Slot {
       VALUES (${productId}, ${slotId})`;
       //execute the query
       const result = await executeQuery(insertQuery);
-
+      newSlot.slotId=slotId;
       return newSlot;
   } catch (error) {
       
@@ -214,7 +214,7 @@ class Slot {
       // Check if the updated slot capacity is less than the number of booked slots.
       // If so, it indicates that there are booked slots exceeding the updated capacity,
       // which is not allowed as it would result in overbooking.
-      console.log();
+      // console.log(slotBooked);
       if (capacity < slotBooked) {
         throw new Error(
           "The number of available slots cannot be less than the number of booked slots"

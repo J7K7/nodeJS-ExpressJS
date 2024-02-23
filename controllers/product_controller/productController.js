@@ -20,6 +20,7 @@ const maxImagesPerProduct = process.env.MAX_IMAGES_PER_PRODUCT;
 
 const ProductController = {
   addProduct: async (req, res) => {
+    // console.log(req);
     try {
       const {
         productName,
@@ -72,6 +73,14 @@ const ProductController = {
           .status(400)
           .json({ Status: false, msg: featureValidationResult.message });
       }
+      //Validating that Product with same name is exist or not  in database 
+      const productCnt=await Product.findProductCountByName(productName);
+      if(productCnt>0){
+        return res
+          .status(409)
+          .json({ Status: false, msg:`Product With This ${productName} name already exists.` });
+      }
+
       console.log("Product Successfully verified");
 
       //creating instance of Product Class
@@ -405,9 +414,10 @@ const ProductController = {
   addFeature: async (req, res) => {
     try {
       const { featureData, productId } = req.body;
-
+      console.log(req.body);
+      const parsedFeatureData=JSON.parse(featureData)
       // Validate input data
-      const featureValidationResult = featureValidation(featureData);
+      const featureValidationResult = featureValidation(parsedFeatureData);
       if (!featureValidationResult.isValid) {
         return res
           .status(400)
@@ -425,13 +435,19 @@ const ProductController = {
       // Create a new feature and linking It with productId By calling the linkProductWithFeatures function
       const featureRelationResult = await Product.linkProductWithFeatures(
         productId,
-        featureData
+        parsedFeatureData
       );
       // console.log(featureRelationResult);
       return res
         .status(201)
         .send({ Status: true, msg: "Features has been added successfully" });
     } catch (error) {
+      if (error.message.includes("error is not defined") || error.message.includes("Product not found")) {
+        console.error(" Invalid Product Id", error);
+        return res
+          .status(400)
+          .json({ Status: false, msg: "Invalid ProductId: " });
+      }
       console.error("Error adding feature:", error);
       res.status(500).json({
         Status: false,
@@ -477,7 +493,7 @@ const ProductController = {
   },
   deleteImageById: async (req, res) => {
     // Extract the image ID from the request parameters
-    const productId = req.params.id;
+    const imageId = req.params.id;
 
     try {
       // Validate the image ID
@@ -565,6 +581,7 @@ const ProductController = {
       slotPrice,
       bookingCategoryId,
     } = req.body;
+    // console.log(req);
     const productId = req.params.id;
     try {
       // Check if required parameters are provided and apply slotValidations
@@ -655,7 +672,7 @@ const ProductController = {
       );
 
       // Send a success response
-      res.status(200).json({ Status: true, msg: "Slot updated successfully." });
+      res.status(200).json({ Status: true, msg: "Slot updated successfully. Please note that the changes will only affect new bookings. Existing bookings remain unchanged." });
     } catch (error) {
       // Handle errors
       if (
@@ -707,8 +724,22 @@ const ProductController = {
       });
     }
   },
+
   deleteSlotById: async (req, res) => {
     // In this function we are deleting entire booking if any particular slot is deleting 
+    // This Function is created using the keeping this assumptions.
+    // 1. When admin try to delete the slot then all the bookings related to that slot should be cancelled.
+    // 2. In bookings it's include if let's take example that the if one booking contain the below booking
+    //    details - Booked products:  Product 1 => slotIds: 101,102,103 
+    //                                prodcuct 2 => slotIds: 201,202
+    //    In this case if admin try to delete the any of the above mentioned slot than entire booking gets cancelled.
+
+    //  3. If Any Ongoing Booking is there than the we can not cancel that booking but delete the slot and keep remain this ongoing booking and cancel allother bookings
+    //              Means that if today is 20th date than i try delete slotId 105(21st) a
+    //              current booking is there which is from  18th to 22 than we can not cancel this booking and only delete the slot.(We have all the data related that slot is already in the bookProduct Table)                            
+    //  Same rule for when single booking contain the multiple slotIds.
+    // So in short when ever we will delete the slot then first check whether there is any booking Than we cancel all the future Booking(booking_FromDate > currentDateTime) and delete the slot.
+    
     let slotId = req.params.id;
     const { message,bookingCategoryId } = req.body;
 
@@ -723,20 +754,9 @@ const ProductController = {
           msg: "Please provide a message for cancelling booked slots.", // The error message to be sent to the client
         });
       }
-      
-      if(bookingCategoryId==1){
-         // Find all bookings associated with the given slotId
-         const confirmedBookingIds = await BookingsMaster.findAllConfirmBookingsBySlotId(slotId);
-         // Check if there are any bookings associated with the slotId
-         if (confirmedBookingIds.length !== 0) {
-           // Cancel the bookings with the given bookingIds and update their status to 'cancelledByAdmin'(statusId:6)
-           const updateStatus = await BookingsMaster.cancelBookingsByAdmin(confirmedBookingIds,6,message);
-          //  console.log(updateStatus);
-         }
-      }
-      // In Hotel or dayWise System if any ongoing booking is there than we can not cancel it.
+    
+      // In this if any ongoing booking is there than we can not cancel it.
       // So for that we comparing the bookingFromDateTime with the current date if it is greater than this than we can delete that bookings.
-      else if(bookingCategoryId==2){
           
         const futureConfirmedBookingIds = await BookingsMaster.findAllFutureConfirmBookingsBySlotId(slotId);
         if(futureConfirmedBookingIds.length>0){
@@ -746,17 +766,15 @@ const ProductController = {
            const updateStatus = await BookingsMaster.cancelBookingsByAdmin(futureConfirmedBookingIds,6,message);
            console.log(updateStatus);
         }
-        console.log(futureConfirmedBookingIds)
-
-        
-      }
+        console.log(futureConfirmedBookingIds);
       // Call the deleteSlot method from the SlotMaster class to delete the slot based upon the slot Id that was passed as an argument
       // Delete the Slot from DB
-      const deletedSlot = await Slot.deleteSlotById(slotId);
+      // const deletedSlot = await Slot.deleteSlotById(slotId);
       // Return a success response
       return res.status(200).json({
         Status: true,
-        msg: "All bookings for the slot have been cancelled Except the OnGoing Bookings and Slot Successfully Deleted!",
+        cancelledBookingIds: futureConfirmedBookingIds,//deletedSlot.data ? [deletedSlot.data.id] : [],
+        msg: futureConfirmedBookingIds.length > 0 ? "All bookings for the slot have been cancelled Except the OnGoing Bookings and Slot Successfully Deleted! So no more Booking for this slot can happen!!" : "Slot successfully deleted! No more bookings for this slot can happen.",
       });
   
     } catch (error) {
