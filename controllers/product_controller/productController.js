@@ -1,4 +1,4 @@
-const executeQuery = require("../../db/connection");
+const {executeQuery} = require("../../db/connection");
 const Feature = require("../../models/product_model/feature");
 const ProductImage = require("../../models/product_model/image");
 const Product = require("../../models/product_model/product");

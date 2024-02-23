@@ -1,4 +1,4 @@
-const executeQuery = require("../../db/connection");
+const {executeQuery} = require("../../db/connection");
 
 // This is the Model for the productMaster Table .
 class Feature {

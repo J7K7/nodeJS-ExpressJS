@@ -1,4 +1,4 @@
-const executeQuery = require("../db/connection");
+const {executeQuery} = require("../db/connection");
 
 
 //check permission for user to access the route

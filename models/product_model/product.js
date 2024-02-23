@@ -1,5 +1,5 @@
 const { combineDateTime } = require("../../common/dateFormat");
-const executeQuery = require("../../db/connection");
+const {executeQuery} = require("../../db/connection");
 const { slotMasterTable } = require("../../db/tables");
 const Feature = require("./feature");
 const ProductImage = require("./image");

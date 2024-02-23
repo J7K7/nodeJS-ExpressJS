@@ -7,15 +7,25 @@ class BookingStatuses {
     }
 
     async save() {
-        let sql = `
-        INSERT INTO booking_statuses (
-            statusName
-        ) VALUES (
-            '${this.statusName}'
-        )
-    `;
 
-        return await executeQuery(sql);
+        try{
+            // Check if the status already exists
+            const statusExists = await this.checkStatus(this.statusName);
+    
+            if (statusExists[0].count === 0){
+                let sql = `
+                    INSERT INTO booking_statuses(
+                        statusName
+                    ) VALUES (
+                        '${this.statusName}'
+                    )
+                `;
+                return await executeQuery(sql);
+            }
+        }catch(err){
+            throw new Error("Error executing the save statsu query " , err)
+        }
+
     }
 
     async checkStatus(statusName) {
@@ -37,21 +47,22 @@ class BookingStatuses {
             SELECT s.statusName 
             FROM booking_statuses as s
             JOIN bookingsmaster as b 
-            ON s.statusId = b.status
+            ON s.statusId = b.statusId
             WHERE b.bookingId = ${bookingId};
         `
         return await executeQuery(sql);
     }
 
-    static async findAddedToCartStatusId(){
+    static async findAddedToCartStatusId(connection){
         let sql = `
             select statusId from booking_statuses where statusName = 'Added To Cart';
         `
         try{
-            const res = await executeQuery(sql);
+            // const res = await executeQuery(sql);
+            const res = await connection.execute(sql);
             return res;
         }catch(err){
-            throw('Error executing findAddedToCartStatusId query:', err);
+            throw new Error('Error executing findAddedToCartStatusId query:', err);
         }
     }
 

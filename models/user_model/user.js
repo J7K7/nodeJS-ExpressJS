@@ -1,5 +1,5 @@
 const bcrypt = require('bcrypt')
-const executeQuery = require("../../db/connection");
+const {executeQuery} = require("../../db/connection");
 const Role = require('./role');
 
 class User {

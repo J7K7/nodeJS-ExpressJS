@@ -1,6 +1,7 @@
 const mysql = require('mysql2/promise');
 const config = require('../config');
 const tables = require('./tables')
+const statusController = require('../controllers/booking_controller/statusController')
 
 // Function to check if the database exists or create it
 async function checkDatabaseExistence() {
@@ -76,6 +77,8 @@ async function createTables() {
     
     //we need to add admin roles and all necessary permission in all related tables
 
+    // Initialize the booking_statuses table with fixed statuses 
+    await statusController.addStatus();
 
   } catch (error) {
     console.error('Error creating tables:', error);

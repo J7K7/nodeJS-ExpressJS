@@ -7,6 +7,8 @@ const userRoutes = require('./routes/user_routes/userRoutes')
 const loginRoute =  require('./routes/user_routes/loginRoute')
 const adminRoutes =  require('./routes/user_routes/adminRoutes')
 var productRouter=require("./routes/product_routes/productRoutes")
+const bookingRoutes = require('./routes/booking_routes/booking')
+
 // const formData =require("express-form-data");
 var app = express();
 
@@ -24,6 +26,7 @@ app.use('/', loginRoute)
 app.use('/user', userRoutes)
 app.use('/admin', adminRoutes)
 app.use('/product',productRouter);
+app.use('/booking' , bookingRoutes)
 
 // console.log(body);
 // catch 404 and forward to error handler

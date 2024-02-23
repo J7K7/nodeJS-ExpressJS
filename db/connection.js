@@ -35,5 +35,5 @@ async function executeQuery(sql, params){
     }
 }
 
-module.exports = executeQuery;
+module.exports = {createPool,executeQuery};
 

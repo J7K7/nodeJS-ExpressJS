@@ -1,4 +1,4 @@
-const executeQuery = require("../../db/connection");
+const {executeQuery} = require("../../db/connection");
 const path = require("path");
 const fs = require("fs");
 class ProductImage {

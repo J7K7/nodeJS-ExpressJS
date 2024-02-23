@@ -1,5 +1,5 @@
 const { combineDateTime } = require("../../common/dateFormat");
-const executeQuery = require("../../db/connection");
+const {executeQuery} = require("../../db/connection");
 const BookProduct = require("../booking_model/bookProduct");
 const Feature = require("./feature");
 const ProductImage = require("./image");

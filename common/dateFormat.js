@@ -11,7 +11,12 @@ function combineDateTime(dateString, timeString) {
     const combinedDateTime = moment(`${fromDate.format('YYYY-MM-DD')} ${timeString}`, 'YYYY-MM-DD HH:mm');
     return combinedDateTime.format('YYYY-MM-DD HH:mm:ss');
 }
+
+function validateDateTime(dateTimeString) {
+    // Validate if the dateTimeString is a valid date and time
+    return moment(dateTimeString, 'YYYY-MM-DD HH:mm:ss', true).isValid();
+}
   
 module.exports = {
-    isValidSqlDateFormat,combineDateTime
+    isValidSqlDateFormat,combineDateTime,validateDateTime
 };
