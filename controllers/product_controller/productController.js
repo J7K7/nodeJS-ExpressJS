@@ -20,7 +20,7 @@ const maxImagesPerProduct = process.env.MAX_IMAGES_PER_PRODUCT;
 
 const ProductController = {
   addProduct: async (req, res) => {
-    // console.log(req);
+    
     try {
       const {
         productName,
@@ -628,6 +628,7 @@ const ProductController = {
     }
   },
   updateSlotById: async (req, res) => {
+    // console.log(req)
     const {
       slotFromDateTime,
       slotToDateTime,

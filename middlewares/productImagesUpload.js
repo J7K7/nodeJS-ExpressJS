@@ -13,7 +13,6 @@ const maxImagesPerProductNumber = parseInt(maxImagesPerProduct);
 // Multer configuration for handling file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    // console.log(req.body.imagesLength )
     const uploadPath = path.join(__dirname, "../public/images", "product");
     fs.mkdirSync(uploadPath, { recursive: true });
     cb(null, uploadPath);
@@ -41,7 +40,7 @@ const upload = multer({
   limits: { fileSize:maxImageSizeBytes}, // Max file size in bytes here, (10 MB)
   fileFilter: (req, file, cb) => {
     // This will check the mimetype of the uploaded file against our list of allowed types and return an error
-
+    console.log(req)
     console.log("filefilter");
     const expectedFieldNames = ["productImages"];
     const allowedFileTypes = ["image/jpeg", "image/png", "image/jpg"];
