@@ -1,5 +1,5 @@
 // const moment = require('moment-timezone');
-const {executeQuery} = require("../../db/connection");
+const { executeQuery } = require("../../db/connection");
 const Slot = require("../product_model/slot");
 const moment = require("moment");
 const { validateDateTime } = require("../../common/dateFormat");
@@ -55,7 +55,7 @@ class BookingsMaster {
 
   async checkIfCartExists(userId, connection) {
     try {
-      // Fo rthe first time when teh user clicks on the product :
+      // For the first time when teh user clicks on the product :
       // 2 Possibilities : Either teh cart eixsts or the cart does not exists
       // If teh cart exist -- booking id exists with status addedTocart-- add product to the same booking Id
       // Or if teh cart does not exist -- booking id does not exist - hence create one -- and then add product
@@ -340,7 +340,6 @@ class BookingsMaster {
     currentbooking_toDatetime,
     connection
   ) {
-    console.log("currentbooking_fromDatetime 2", currentbooking_fromDatetime);
 
     // console.log(booking_fromDatetime,booking_toDatetime);
     if (bookingCategoryId == 1) {
@@ -353,8 +352,7 @@ class BookingsMaster {
         "YYYY-MM-DD"
       );
 
-      console.log("currentbooking_fromDate", currentbooking_fromDate);
-      console.log("currentDate", currentDate);
+
       // Check if the booking_fromDatetime is before the current date time
       if (moment(currentbooking_fromDate).isBefore(currentDate)) {
         // The booking date should be greater than the current datetime.
@@ -499,11 +497,24 @@ class BookingsMaster {
   }
 
   //Cancels bookings by admin for the specified booking IDs
-  static async cancelBookingsByAdmin(bookingIds, statusId, message) {
+  static async cancelBookingsByAdminOrUser(bookingIds, statusId, message) {
     try {
       // In this we are changing the statusId of the bookingmaster and deacresing the quantity  of slots in  slotmaster table
 
       for (const bookingId of bookingIds) {
+
+        // LEFT LEFT -- MADE this change for sm.active - will this work ? 
+        // const query = `
+        //         UPDATE bookingsmaster AS bm
+        //         JOIN bookproduct AS bp ON bm.bookingId = bp.bookingId
+        //         JOIN slotmaster AS sm ON bp.slotId = sm.slotId
+        //         SET bm.statusId = ?,
+        //             bm.cancel_message = ?,
+        //             sm.slotBooked = sm.slotBooked - bp.quantity,
+        //             sm.slotActive=1
+        //         WHERE bm.bookingId = ?
+        //       `;
+
         const query = `
                 UPDATE bookingsmaster AS bm
                 JOIN bookproduct AS bp ON bm.bookingId = bp.bookingId
@@ -511,9 +522,9 @@ class BookingsMaster {
                 SET bm.statusId = ?,
                     bm.cancel_message = ?,
                     sm.slotBooked = sm.slotBooked - bp.quantity,
-                    sm.active=1
+                    sm.slotActive=CASE WHEN (sm.slotBooked - bp.quantity) <= sm.slotOriginalCapacity THEN true ELSE sm.slotActive END
                 WHERE bm.bookingId = ?
-              `;
+        `;
 
         // Prepare the values to be bound to the query
         const values = [statusId, message, bookingId];

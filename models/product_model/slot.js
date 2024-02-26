@@ -299,5 +299,24 @@ class Slot {
       throw new Error(`Error deleting slot: ${error.message}`);
     }
   }
+
+  async updateSlotAndBooking(connection, bookingId){
+      const [updateResult] = await connection.execute(`
+          UPDATE slotmaster AS sm
+          JOIN bookproduct AS bp ON sm.slotId = bp.slotId
+          SET 
+              sm.slotBooked = sm.slotBooked + bp.quantity,
+      
+              sm.slotActive = CASE 
+                              WHEN sm.slotOriginalCapacity = (sm.slotBooked + bp.quantity) THEN 0
+                              ELSE sm.slotActive
+                          END
+          WHERE bp.bookingId = ? and sm.slotOriginalCapacity >= (sm.slotBooked + bp.quantity);
+      `, [bookingId]);
+
+      // console.log("Insiude Fn",updateResult);
+      return updateResult;
+  };
+  
 }
 module.exports = Slot;

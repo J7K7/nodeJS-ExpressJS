@@ -11,10 +11,10 @@ async function checkDatabaseExistence() {
 
   try {
     // SQL query to create the database if it does not exist
-    const query = `CREATE DATABASE IF NOT EXISTS booking`;
+    const query = `CREATE DATABASE IF NOT EXISTS BS`;
     // Execute the query
     await connection.execute(query);
-    config.db.database = "booking";
+    config.db.database = "BS";
     console.log('Database Created If Not Exists !');
   } catch (error) {
     console.error('Error checking database existence:', error);

@@ -804,7 +804,7 @@ const ProductController = {
           
           //  Cancel the bookings with the given bookingIds and update their status to 'cancelledByAdmin'(statusId:6)
           // Also decreasing the bookedSlot in slotmaster table.
-           const updateStatus = await BookingsMaster.cancelBookingsByAdmin(futureConfirmedBookingIds,6,message);
+           const updateStatus = await BookingsMaster.cancelBookingsByAdminOrUser(futureConfirmedBookingIds,6,message);
            console.log(updateStatus);
         }
         console.log(futureConfirmedBookingIds);
