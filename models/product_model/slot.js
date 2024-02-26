@@ -140,11 +140,23 @@ class Slot {
   }
   }
   //getSlot by ID
-  static async getSlotById(slotId) {
+  // Made cahnges in thsi function ---- addedc connection param 
+  static async getSlotById(slotId , connection) {
     try {
       const query =
         "SELECT slotDate, slotFromDateTime, slotToDateTime, slotOriginalCapacity, slotPrice, slotActive, slotBooked FROM slotmaster WHERE slotId = ?";
-      const result = await executeQuery(query, [slotId]);
+
+      let result;
+
+      if(connection != null){
+        result = await connection.execute(query , [slotId]) 
+        result = result[0]
+      }else{
+        result = await executeQuery(query, [slotId]);
+      }
+
+      console.log("result" , result)
+
       if (result.length > 0) {
         return result[0];
       } else {
@@ -209,7 +221,7 @@ class Slot {
   static async updateSlotById(slotId, newSlotDetails, bookingCategoryId) {
     const { fromTime, toTime, capacity, price } = newSlotDetails;
     try {
-      let result = await this.getSlotById(slotId);
+      let result = await this.getSlotById(slotId , null);
       const slotBooked = result.slotBooked;
       // Check if the updated slot capacity is less than the number of booked slots.
       // If so, it indicates that there are booked slots exceeding the updated capacity,
@@ -267,7 +279,7 @@ class Slot {
   static async deleteSlotById(slotId) {
     try {
       //validate that slotId is valid or not 
-      let slotDetails = await this.getSlotById(slotId);
+      let slotDetails = await this.getSlotById(slotId , null);
 
       // SQL query to delete the slot from the slotproduct_relation table
       const deleteRelationQuery = `DELETE FROM slotproduct_relation WHERE slotId = ?`;
@@ -317,6 +329,38 @@ class Slot {
       // console.log("Insiude Fn",updateResult);
       return updateResult;
   };
+
+  async findSlotIds(connection, productId, bookingFromDate, bookingToDate) {
+    try {
+        // Applicable for Day based booking 
+        // If Business Category = Day -- Find the slots based on  booking_fromDatetime, booking_toDatetime
+
+        let q = `
+        SELECT slotId 
+        FROM slotmaster 
+        WHERE slotDate >= '${bookingFromDate}' 
+            AND slotDate <= '${bookingToDate}'
+            AND slotId IN (
+                SELECT slotId 
+                FROM slotproduct_relation 
+                WHERE productId = '${productId}'
+            )
+            AND '${productId}' NOT IN (
+                SELECT productId
+                FROM productmaster
+                WHERE isDeleted = 1 or isActive=0
+            );
+
+        `
+
+        const slotIds = await connection.execute(q, [bookingFromDate, bookingToDate, productId]);
+
+        return slotIds[0];
+    } catch (err) {
+        throw new Error("Error fetching the slots for this product: " + err.message);
+    }
+}
+
   
 }
 module.exports = Slot;

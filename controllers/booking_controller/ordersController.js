@@ -30,19 +30,19 @@ const Order = require('../../models/booking_model/orders')
 //     If Admin : Find all the orders 
 // */
 exports.viewAllOrders = async (req, res) => {
-    const userId = req.params.userId;
 
-    // Hardcoded as of now, replace with roleId from the headers
-    const role = 'user';
+    const userId = req.user.userId;
+    const roleId = req.user.roleId;
+    
     // const role = 'user';
     let orders = {};
 
     try {
         let ordersData;
 
-        if (role == 'admin') {
+        if (roleId == 1) {
             ordersData = await Order.getAllOrders();
-        } else {
+        } else if(roleId == 2){
             ordersData = await Order.getAllOrdersOfUser(userId);
         }
 

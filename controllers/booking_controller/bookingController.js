@@ -18,7 +18,8 @@ const MAX_RETRIES = 3; // Maximum number of retries
 
 const BookingController = {
     confirmBooking: async (req, res) => {
-        const { userId } = req.body;
+       
+        const userId = req.user.userId;
 
         // Start a transaction
         const connection = await createPool();
@@ -143,7 +144,10 @@ const BookingController = {
     // Cancel Booking by user and admin
     cancelBooking: async (req, res) => {
         // get userId from headers & fetch the role from that token 
-        const { userId, roleId, bookingId, cancel_message } = req.body;
+        const userId = req.user.userId;
+        const roleId = req.user.roleId;
+        
+        const { bookingId, cancel_message } = req.body;
 
         // Role id is assumed to be 1 : Admin -- 2 : Users
 

@@ -119,10 +119,12 @@ class User {
 
     const query =
       "SELECT userId, email, password, firstName, lastName, phoneNumber, profilePic FROM usermaster WHERE email = ? AND isDeleted = 0";
+    // const query = "select * from usermaster"
     const queryparam = [email];
 
     try {
       const result = await executeQuery(query, queryparam);
+      // console.log(result);
       return result.length > 0 ? result[0] : null;
     } catch (err) {
       throw new Error("Error while fetching user by email");

@@ -13,6 +13,11 @@ const userController = {
     try {
       //email password firstName lastName phoneNumber should be present and not undefined
       if (!req.body.email || !req.body.password || !req.body.firstName || !req.body.lastName || !req.body.phoneNumber){
+        console.log(!req.body.email);
+        console.log(!req.body.password);
+        console.log(!req.body.firstName);
+        console.log(!req.body.lastName);
+        console.log(!req.body.phoneNumber);
         return res
         .status(400)
         .json({ msg: "All necessary fields are required", status: false });

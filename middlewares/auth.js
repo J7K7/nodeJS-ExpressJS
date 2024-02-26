@@ -22,9 +22,13 @@ const auth = async (req, res, next) => {
         //token is already signed with roleId
 
         let currentUrl = req.url; // this gives us the url of the requested resource.
-        
+        // console.log("this is current url", currentUrl);
         // remove / from starting of the url
-        currentUrl = currentUrl.slice(1);
+        // currentUrl = currentUrl.slice(1);
+        //remove "/" and "numbers" from the url string
+        currentUrl = currentUrl.replace(/\/|\d/g, '');
+
+        // console.log(cleanedUrl);
 
         // Check if the user has permission to access the specified URL.
         // The URL string and the role that can access the URL are stored in the database.

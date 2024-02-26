@@ -14,7 +14,7 @@ const loginController = {
           if (!result) {
             return res
               .status(401)
-              .json({ msg: "Invalid Email or Password", Status: false });
+              .json({ msg: "Invalid Email ", Status: false });
           }
 
           //comapre password  with hashed password stored in the database
@@ -22,7 +22,7 @@ const loginController = {
           if (!validPassword) {
             return res
               .status(401)
-              .json({ msg: "Invalid Email or Password", Status: false });
+              .json({ msg: "Invalid Password", Status: false });
           }
           
           //find role of the user  and add it to the token

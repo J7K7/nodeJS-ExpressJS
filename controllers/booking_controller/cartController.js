@@ -2,7 +2,7 @@ const { createPool } = require('../../db/connection');
 
 const BookingsMaster = require('../../models/booking_model/bookingsMaster')
 const BookProduct = require('../../models/booking_model/bookProduct')
-
+const Slot = require('../../models/product_model/slot')
 const moment = require('moment');
 
 // Create the cart or update the existing one
@@ -23,6 +23,8 @@ const moment = require('moment');
 
 exports.addToCart = async (req, res) => {
 
+    const userId = req.user.userId;
+
     // Start a transaction
     const connection = await createPool();
     await connection.beginTransaction();
@@ -30,7 +32,7 @@ exports.addToCart = async (req, res) => {
     try {
 
         // Get userId from teh headers later
-        let { userId, bookingCategoryId, bookingFromDate, bookingToDate = null, productId, quantity } = req.body;
+        let { bookingCategoryId, bookingFromDate, bookingToDate = null, productId, quantity } = req.body;
 
         // Parsing the incoming data bcoz the www-urlencoded type of data gets passed as string in the body
         productId = parseInt(productId);
@@ -38,6 +40,7 @@ exports.addToCart = async (req, res) => {
 
         // if day -- multiple slotIds -- If slot -- one slot Id 
         let slotIds;
+        let slot = new Slot();
 
         // If slotIds is null in body-- which mean booking category is Day -- find slot Ids automatically 
         if (bookingCategoryId == 1 /**Slot */) {
@@ -51,10 +54,10 @@ exports.addToCart = async (req, res) => {
 
             const numberofDays = moment(bookingToDate).diff(moment(bookingFromDate), 'days') + 1
 
-            console.log(numberofDays);
-            let slotIdsTemp = await findSlotIds(connection, productId, bookingFromDate, bookingToDate);
+            // console.log(numberofDays);
+            let slotIdsTemp = await slot.findSlotIds(connection, productId, bookingFromDate, bookingToDate);
             slotIds = slotIdsTemp.map((slot) => slot.slotId);
-            console.log(slotIds)
+            // console.log(slotIds)
             // Some of the days may not be available between bookingFromDateTime & bookingToDateTime 
             // Cases : a day between the fromDate & toDate can be deactivated by the admin - or deleted - or capacity full 
             if (slotIds.length != numberofDays) {
@@ -128,8 +131,10 @@ exports.removefromCart = async (req, res) => {
     const connection = await createPool();
     await connection.beginTransaction();
 
+    const userId = req.user.userId;
+
     try {
-        const { userId, productId, slotId } = req.body;
+        const {productId, slotId } = req.body;
 
         let BookingMaster = new BookingsMaster();
         let currentBookingId = await BookingMaster.checkIfCartExists(userId, connection);
@@ -169,12 +174,17 @@ exports.removefromCart = async (req, res) => {
 exports.viewCart = async (req, res) => {
 
     // Get it from heaaders later
-    const userId = req.params.userId;
+    // const userId = req.params.userId;
+
+    const userId = req.user.userId;
+
+
     const BookingMaster = new BookingsMaster();
     try {
 
         let currentBookingId = await BookingMaster.checkIfCartExists(userId, null);
 
+        console.log("currentBookingId" , currentBookingId)
         // Check if the cart exists
         if (currentBookingId == null) {
             return res.status(200).json({ Status: true, msg: "Cart is empty", items: [] });
@@ -189,36 +199,36 @@ exports.viewCart = async (req, res) => {
     }
 };
 
-async function findSlotIds(connection, productId, bookingFromDate, bookingToDate) {
-    try {
-        // Applicable for Day based booking 
-        // If Business Category = Day -- Find the slots based on  booking_fromDatetime, booking_toDatetime
+// async function findSlotIds(connection, productId, bookingFromDate, bookingToDate) {
+//     try {
+//         // Applicable for Day based booking 
+//         // If Business Category = Day -- Find the slots based on  booking_fromDatetime, booking_toDatetime
 
-        let q = `
-        SELECT slotId 
-        FROM slotmaster 
-        WHERE slotDate >= '${bookingFromDate}' 
-            AND slotDate <= '${bookingToDate}'
-            AND slotId IN (
-                SELECT slotId 
-                FROM slotproduct_relation 
-                WHERE productId = '${productId}'
-            )
-            AND '${productId}' NOT IN (
-                SELECT productId
-                FROM productmaster
-                WHERE isDeleted = 1 or isActive=0
-            );
+//         let q = `
+//         SELECT slotId 
+//         FROM slotmaster 
+//         WHERE slotDate >= '${bookingFromDate}' 
+//             AND slotDate <= '${bookingToDate}'
+//             AND slotId IN (
+//                 SELECT slotId 
+//                 FROM slotproduct_relation 
+//                 WHERE productId = '${productId}'
+//             )
+//             AND '${productId}' NOT IN (
+//                 SELECT productId
+//                 FROM productmaster
+//                 WHERE isDeleted = 1 or isActive=0
+//             );
 
-        `
+//         `
 
-        const slotIds = await connection.execute(q, [bookingFromDate, bookingToDate, productId]);
+//         const slotIds = await connection.execute(q, [bookingFromDate, bookingToDate, productId]);
 
-        return slotIds[0];
-    } catch (err) {
-        throw new Error("Error fetching the slots for this product: " + err.message);
-    }
-}
+//         return slotIds[0];
+//     } catch (err) {
+//         throw new Error("Error fetching the slots for this product: " + err.message);
+//     }
+// }
 
 
 async function processSlotIds(slotIds, productId, quantity, currentBookingId, currentbooking_fromDatetime , currentbooking_toDatetime , connection) {
@@ -281,9 +291,9 @@ async function updateBookingDates(slotDetails , currentBookingId , currentbookin
 async function validateSlot(slotId, quantity, connection) {
     // Validate slot details
     quantity = parseInt(quantity);
-
-    const slotDetails = await getSlotDetails(slotId, connection);
-
+    console.log("slotId" , slotId)
+    const slotDetails = await Slot.getSlotById(slotId, connection);
+    // console.log("slotDetails" ,slotDetails);
     if (!slotDetails.slotActive) {
         throw new Error(`Slot with id ${slotId} is inactive!`);
     }
@@ -295,13 +305,13 @@ async function validateSlot(slotId, quantity, connection) {
 }
 
 
-async function getSlotDetails(slotId, connection) {
-    // Get details of a slot
-    const sql = `SELECT slotFromDateTime, slotToDateTime, slotBooked, slotPrice, slotActive, slotOriginalCapacity FROM slotmaster WHERE slotId = ?`;
-    const [result] = await connection.execute(sql, [slotId]);
+// async function getSlotDetails(slotId, connection) {
+//     // Get details of a slot
+//     const sql = `SELECT slotFromDateTime, slotToDateTime, slotBooked, slotPrice, slotActive, slotOriginalCapacity FROM slotmaster WHERE slotId = ?`;
+//     const [result] = await connection.execute(sql, [slotId]);
 
-    return result[0];
-}
+//     return result[0];
+// }
 
 async function getBookingDates(bookingId, connection) {
     const sql = `

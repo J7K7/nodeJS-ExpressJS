@@ -3,6 +3,7 @@ var router = express.Router();
 var ProductController = require("../../controllers/product_controller/productController");
 const validateProduct = require('../../middlewares/validateProduct');
 const productImagesUpload = require('../../middlewares/productImagesUpload');
+const auth = require('../../middlewares/auth');
 
 
 /* 
@@ -31,7 +32,7 @@ POST /add-product:
     - productImages: array of files (optional) - Images representing the product.
     - bookingCategoryId: int (required) - The booking category for the product. Possible values of that id : 1 or 2. 1="slot",2="dayWise"
 */
-router.post('/addProduct',productImagesUpload, ProductController.addProduct);
+router.post('/addProduct',auth, productImagesUpload, ProductController.addProduct);
 
 /* 
  PUT /update-feature/:id:
@@ -43,7 +44,7 @@ router.post('/addProduct',productImagesUpload, ProductController.addProduct);
     - name: string (required) - The updated name of the feature.
     - description: string (required) - The updated description of the feature.
  */
-router.put('/updateFeature/:id',ProductController.updateFeature );
+router.put('/updateFeature/:id',auth,ProductController.updateFeature );
 
 /* 
  POST /add-feature:
@@ -53,7 +54,7 @@ router.put('/updateFeature/:id',ProductController.updateFeature );
     - featureData: array (required) - Array of feature objects to be added to the product.
     - productId: string (required) - The ID of the product to which features are to be added.
  */
-router.post('/addFeature', ProductController.addFeature);
+router.post('/addFeature', auth, ProductController.addFeature);
 /* 
  DELETE /delete-product/:id:
   - Description: Endpoint for deleting a feature by its ID.
@@ -61,30 +62,30 @@ router.post('/addFeature', ProductController.addFeature);
   - Request Parameters:
     - id: string (required) - The ID of the feature to be deleted.
  */
-router.delete('/deleteFeature/:id', ProductController.deleteFeatureById);
+router.delete('/deleteFeature/:id', auth, ProductController.deleteFeatureById);
 
-router.delete('/deleteImage/:id', ProductController.deleteImageById);
+router.delete('/deleteImage/:id', auth, ProductController.deleteImageById);
 
-router.post('/addImage',productImagesUpload,ProductController.addProductImage);
+router.post('/addImage',auth, productImagesUpload,ProductController.addProductImage);
 
-router.get('/getProductDetails/:id',ProductController.getProductDetailsById );//this
+router.get('/getProductDetails/:id',auth,ProductController.getProductDetailsById );//this
 
-router.get('/getAllProductDetails',ProductController.getAllProductsWithImagesandFeature );
+router.get('/getAllProductDetails',auth, ProductController.getAllProductsWithImagesandFeature );
 
-router.put('/updateSlotById/:id',ProductController.updateSlotById);
+router.put('/updateSlotById/:id',auth, ProductController.updateSlotById);
 
-router.get('/getProductDetails/:id',ProductController.getProductDetailsById );
+// router.get('/getProductDetails/:id',ProductController.getProductDetailsById );
 
-router.put('/updateSlotStatus/:id',ProductController.updateSlotStatusById );
+router.put('/updateSlotStatus/:id',auth, ProductController.updateSlotStatusById );
 
-router.delete('/deleteSlotById/:id',ProductController.deleteSlotById );
+router.delete('/deleteSlotById/:id',auth, ProductController.deleteSlotById );
 
-router.post('/addSingleSlotByProductId/:id',ProductController.addSingleSlotByProductId);
+router.post('/addSingleSlotByProductId/:id',auth, ProductController.addSingleSlotByProductId);
 
-router.put('/updateProductStatus/:id',ProductController.updateProductStatusById );
+router.put('/updateProductStatus/:id',auth, ProductController.updateProductStatusById );
 
-router.put('/deleteProduct/:id',ProductController.deleteProductById );
+router.put('/deleteProduct/:id',auth, ProductController.deleteProductById );
 
-router.put('/updateProductDetails/:id',ProductController.updateProductDetails);
+router.put('/updateProductDetails/:id',auth, ProductController.updateProductDetails);
 
 module.exports = router;

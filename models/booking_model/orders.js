@@ -31,7 +31,7 @@ class Order {
             FROM bookingsmaster b
             JOIN bookProduct p ON b.bookingId = p.bookingId
             JOIN productmaster pm ON p.productId = pm.productId
-            LEFT JOIN imageproduct_relation ip ON pm.productId = ip.productId
+            LEFT JOIN productimage_relation ip ON pm.productId = ip.productId
             LEFT JOIN bookproduct s ON p.productId = s.productId AND p.bookingId = s.bookingId;
         `;
 
@@ -52,7 +52,7 @@ class Order {
             FROM bookingsmaster b
             JOIN bookProduct p ON b.bookingId = p.bookingId
             JOIN productmaster pm ON p.productId = pm.productId
-            LEFT JOIN imageproduct_relation ip ON pm.productId = ip.productId
+            LEFT JOIN productimage_relation ip ON pm.productId = ip.productId
             LEFT JOIN bookproduct s ON p.productId = s.productId AND p.bookingId = s.bookingId
             JOIN userbooking_relation u ON b.bookingId = u.bookingId
             WHERE u.userId = ?;
