@@ -143,13 +143,11 @@ const BookingController = {
 
     // Cancel Booking by user and admin
     cancelBooking: async (req, res) => {
-        // get userId from headers & fetch the role from that token 
-        const userId = req.user.userId;
         const roleId = req.user.roleId;
         
         const { bookingId, cancel_message } = req.body;
 
-        // Role id is assumed to be 1 : Admin -- 2 : Users
+        // Role id is   1 : Admin -- 2 : Users
 
         // if user cancels : status : CANCELLED (5) 
         // if admin cancels : staus : CANCELLED BY ADMIN(6) with cancel msg 
@@ -167,9 +165,6 @@ const BookingController = {
             } else if (roleId == 2 /**User */) {
                 await BookingsMaster.cancelBookingsByAdminOrUser([bookingId], 5, null)
             }
-
-            // // Update slot booked and set active if necessary
-            // await decrementSlotBookedCapacity(bookingId);
 
             res.status(200).json({ Status: true, msg: `Booking with Id ${bookingId} cancelled successfully` });
         } catch (err) {

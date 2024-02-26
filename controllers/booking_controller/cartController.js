@@ -91,7 +91,7 @@ exports.addToCart = async (req, res) => {
 
         }else{
 
-            ({ currentbooking_fromDatetime , currentbooking_toDatetime} = await getBookingDates(currentBookingId , connection))
+            ({ currentbooking_fromDatetime , currentbooking_toDatetime} = await BookingMaster.getBookingDates(currentBookingId , connection))
             
         }
 
@@ -184,7 +184,6 @@ exports.viewCart = async (req, res) => {
 
         let currentBookingId = await BookingMaster.checkIfCartExists(userId, null);
 
-        console.log("currentBookingId" , currentBookingId)
         // Check if the cart exists
         if (currentBookingId == null) {
             return res.status(200).json({ Status: true, msg: "Cart is empty", items: [] });
@@ -198,37 +197,6 @@ exports.viewCart = async (req, res) => {
         return res.status(400).json({ Status: false, msg: "Error retrieving cart items. Try again!", err: err.message });
     }
 };
-
-// async function findSlotIds(connection, productId, bookingFromDate, bookingToDate) {
-//     try {
-//         // Applicable for Day based booking 
-//         // If Business Category = Day -- Find the slots based on  booking_fromDatetime, booking_toDatetime
-
-//         let q = `
-//         SELECT slotId 
-//         FROM slotmaster 
-//         WHERE slotDate >= '${bookingFromDate}' 
-//             AND slotDate <= '${bookingToDate}'
-//             AND slotId IN (
-//                 SELECT slotId 
-//                 FROM slotproduct_relation 
-//                 WHERE productId = '${productId}'
-//             )
-//             AND '${productId}' NOT IN (
-//                 SELECT productId
-//                 FROM productmaster
-//                 WHERE isDeleted = 1 or isActive=0
-//             );
-
-//         `
-
-//         const slotIds = await connection.execute(q, [bookingFromDate, bookingToDate, productId]);
-
-//         return slotIds[0];
-//     } catch (err) {
-//         throw new Error("Error fetching the slots for this product: " + err.message);
-//     }
-// }
 
 
 async function processSlotIds(slotIds, productId, quantity, currentBookingId, currentbooking_fromDatetime , currentbooking_toDatetime , connection) {
@@ -246,12 +214,13 @@ async function processSlotIds(slotIds, productId, quantity, currentBookingId, cu
 async function processSlot(slotId, productId, quantity, currentBookingId, currentbooking_fromDatetime , currentbooking_toDatetime , connection) {
 
     let BookProducts = new BookProduct();
+    let BookingMaster = new BookingsMaster();
 
     // Process individual slot and update cart
     const slotDetails = await validateSlot(slotId, quantity, connection);
 
     // Update the dates of the slot if needed in bookingsmaster
-    let {updatedbooking_fromDatetime , updatedbooking_toDatetime} = await updateBookingDates(slotDetails , currentBookingId , currentbooking_fromDatetime , currentbooking_toDatetime , connection );
+    let {updatedbooking_fromDatetime , updatedbooking_toDatetime} = await BookingMaster.updateBookingDates(slotDetails , currentBookingId , currentbooking_fromDatetime , currentbooking_toDatetime , connection );
 
     const existingProductDetails = await BookProducts.getExistingProductDetails(currentBookingId, productId, slotId, connection);
 
@@ -266,34 +235,13 @@ async function processSlot(slotId, productId, quantity, currentBookingId, curren
     return {updatedbooking_fromDatetime , updatedbooking_toDatetime};
 }
 
-async function updateBookingDates(slotDetails , currentBookingId , currentbooking_fromDatetime , currentbooking_toDatetime , connection ){
-
-
-    if(moment(slotDetails.slotFromDateTime).isBefore(currentbooking_fromDatetime)){
-        currentbooking_fromDatetime = slotDetails.slotFromDateTime
-    }
-
-    if(moment(slotDetails.slotToDateTime).isAfter(currentbooking_toDatetime)){
-        currentbooking_toDatetime = slotDetails.slotToDateTime;
-    }
-
-    let sql = `
-        update bookingsmaster 
-        set booking_fromDatetime = ?, booking_toDatetime = ? where bookingId = ?
-    `
-
-    await connection.execute(sql , [currentbooking_fromDatetime , currentbooking_toDatetime , currentBookingId])
-
-    return {updatedbooking_fromDatetime : currentbooking_fromDatetime , updatedbooking_toDatetime : currentbooking_toDatetime}
-}
-
 
 async function validateSlot(slotId, quantity, connection) {
     // Validate slot details
     quantity = parseInt(quantity);
-    console.log("slotId" , slotId)
+
     const slotDetails = await Slot.getSlotById(slotId, connection);
-    // console.log("slotDetails" ,slotDetails);
+
     if (!slotDetails.slotActive) {
         throw new Error(`Slot with id ${slotId} is inactive!`);
     }
@@ -312,17 +260,6 @@ async function validateSlot(slotId, quantity, connection) {
 
 //     return result[0];
 // }
-
-async function getBookingDates(bookingId, connection) {
-    const sql = `
-        select booking_fromDatetime , booking_toDatetime from bookingsmaster where bookingId = ?;
-    `
-
-    const [result] = await connection.execute(sql, [bookingId]);
-
-    return { currentbooking_fromDatetime : result[0].booking_fromDatetime, currentbooking_toDatetime : result[0].booking_toDatetime};
-}
-
 
 
 

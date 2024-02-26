@@ -75,14 +75,14 @@ class BookingsMaster {
             WHERE ubr.userId = ? 
             AND bm.statusId = 1;
         `;
-        
+
 
       if (connection == null) {
         const bookingIdWithStatusAddedToCart = await executeQuery(
           bookingIdWithStatusAddedToCartQuery,
           [userId]
         );
-        console.log("bookingIdWithStatusAddedToCart" , bookingIdWithStatusAddedToCart);
+        console.log("bookingIdWithStatusAddedToCart", bookingIdWithStatusAddedToCart);
 
         return bookingIdWithStatusAddedToCart.length === 1
           ? bookingIdWithStatusAddedToCart[0].bookingId
@@ -92,8 +92,8 @@ class BookingsMaster {
           bookingIdWithStatusAddedToCartQuery,
           [userId]
         );
-        
-  
+
+
         return bookingIdWithStatusAddedToCart[0].length === 1
           ? bookingIdWithStatusAddedToCart[0][0].bookingId
           : null;
@@ -361,7 +361,7 @@ class BookingsMaster {
         // The booking date should be greater than the current datetime.
         throw new Error("Select an appropriate date the can be fullfilled.");
       }
-      
+
       if (bookingFromDate !== currentbooking_fromDate) {
         throw new Error(
           "At a time , you can book products with the same Date."
@@ -416,6 +416,40 @@ class BookingsMaster {
     return false;
   }
 
+  async updateBookingDates(slotDetails, currentBookingId, currentbooking_fromDatetime, currentbooking_toDatetime, connection) {
+
+
+    if (moment(slotDetails.slotFromDateTime).isBefore(currentbooking_fromDatetime)) {
+      currentbooking_fromDatetime = slotDetails.slotFromDateTime
+    }
+
+    if (moment(slotDetails.slotToDateTime).isAfter(currentbooking_toDatetime)) {
+      currentbooking_toDatetime = slotDetails.slotToDateTime;
+    }
+
+    let sql = `
+        update bookingsmaster 
+        set booking_fromDatetime = ?, booking_toDatetime = ? where bookingId = ?
+    `
+
+    await connection.execute(sql, [currentbooking_fromDatetime, currentbooking_toDatetime, currentBookingId])
+
+    return { updatedbooking_fromDatetime: currentbooking_fromDatetime, updatedbooking_toDatetime: currentbooking_toDatetime }
+  }
+
+
+  async getBookingDates(bookingId, connection) {
+    const sql = `
+      select booking_fromDatetime , booking_toDatetime from bookingsmaster where bookingId = ?;
+  `
+
+    const [result] = await connection.execute(sql, [bookingId]);
+
+    return { currentbooking_fromDatetime: result[0].booking_fromDatetime, currentbooking_toDatetime: result[0].booking_toDatetime };
+  }
+
+
+
   // From Here all updates written by JIM Patel
 
   //find all the confirm booking with given productId (statusId:3)
@@ -457,7 +491,7 @@ class BookingsMaster {
         AND bm.statusId = 3      
               `;
       // Check That the SlotId is valid Or not.If it's not then Throw an Error
-      const slot = await Slot.getSlotById(slotId , null);
+      const slot = await Slot.getSlotById(slotId, null);
 
       const bookings = await executeQuery(query, [slotId]);
       // console.log(bookings);
@@ -487,9 +521,9 @@ class BookingsMaster {
           AND bm.booking_fromDatetime > ? 
       `;
     // Check That the SlotId is valid Or not.If it's not then Throw an Error
-    const slot = await Slot.getSlotById(slotId , null);
+    const slot = await Slot.getSlotById(slotId, null);
 
-    console.log("slot" , slot)
+    console.log("slot", slot)
 
     // Execute the SQL query with the slot ID and current date as parameters
     const result = await executeQuery(query, [slotId, currentDate]);
