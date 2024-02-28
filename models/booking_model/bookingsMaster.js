@@ -6,9 +6,6 @@ const { validateDateTime } = require("../../common/dateFormat");
 const BookingStatuses = require('../../models/booking_model/bookingStatuses')
 const UserBookingRelation = require('../../models/booking_model/userbooking_relation')
 
-// Get the current time in Indian Standard Time (IST)
-// const nowIST = moment().tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss');
-
 class BookingsMaster {
   constructor(
     bookingDate,
@@ -108,7 +105,13 @@ class BookingsMaster {
         SELECT COUNT(*) as count FROM bookingsmaster WHERE bookingId = ${bookingId};
     `;
 
-    return await executeQuery(sql);
+    try{
+      return await executeQuery(sql);
+
+
+    }catch(err){
+      throw new Error('Invalid BookingId')
+    }
   }
 
   static async updateStatusAndCancelMessage(

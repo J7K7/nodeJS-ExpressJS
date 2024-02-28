@@ -32,25 +32,64 @@ exports.addToCart = async (req, res) => {
     try {
 
         // Get userId from teh headers later
-        let { bookingCategoryId, bookingFromDate, bookingToDate = null, productId, quantity } = req.body;
+        let { bookingCategoryId, bookingFromDate, bookingToDate = null, productId, quantity = 1 } = req.body;
+        // Will come from body (SLOT) & will find automatic (DAY)
+        let slotIds;
+
+        if (!bookingCategoryId) {
+            return res.status(400).json({ status: false, msg: "Could not retrieve booking category Id" })
+        } else {
+
+            if (!productId) {
+                return res.status(400).json({ status: false, msg: "Select an appropriate product" })
+            }
+
+            if (bookingCategoryId == 1) {
+                // Validate slot data 
+                if (!bookingFromDate) {
+                    return res.status(400).json({ status: false, msg: "Booking Date is required" })
+                }
+
+
+            } else if (bookingCategoryId == 2) {
+                // validate day data
+                if (!bookingFromDate || !bookingToDate) {
+                    return res.status(400).json({ status: false, msg: "Booking Dates are required" })
+                }
+
+                if (bookingFromDate > bookingToDate) {
+                    return res.status(400).json({ status: false, msg: "From Date should be less than To Date." })
+                }
+
+
+
+            } else {
+                return res.status(400).json({ status: false, msg: "Could not retrieve a valid booking category Id" })
+            }
+        }
 
         // Parsing the incoming data bcoz the www-urlencoded type of data gets passed as string in the body
         productId = parseInt(productId);
         quantity = parseInt(quantity);
 
         // if day -- multiple slotIds -- If slot -- one slot Id 
-        let slotIds;
         let slot = new Slot();
 
         // If slotIds is null in body-- which mean booking category is Day -- find slot Ids automatically 
         if (bookingCategoryId == 1 /**Slot */) {
 
-            slotIds = JSON.parse(req.body.slotIds);
+            slotIds = req.body.slotIds;
+
+            if (!slotIds || slotIds == '') {
+                return res.status(400).json({ status: false, msg: "Select slot for this product" })
+            }
+
+            slotIds = JSON.parse(slotIds);
 
         } else if (bookingCategoryId == 2/**Day */) {
             // Find SLot Ids based on booking from date & booking to date (Bcoz slots are of complete dayss)
-             bookingFromDate = moment(bookingFromDate).format('YYYY-MM-DD');
-             bookingToDate = moment(bookingToDate).format('YYYY-MM-DD');
+            bookingFromDate = moment(bookingFromDate).format('YYYY-MM-DD');
+            bookingToDate = moment(bookingToDate).format('YYYY-MM-DD');
 
             const numberofDays = moment(bookingToDate).diff(moment(bookingFromDate), 'days') + 1
 
@@ -69,6 +108,20 @@ exports.addToCart = async (req, res) => {
             throw new Error('Slots Unavailable Or product Is Inactive!')
         }
 
+        // Check if the slots selected is for that product only ---- 
+        try {
+            for (const slotId of slotIds) {
+                let productIdFound = await Slot.findProductIdBySlotId(slotId);
+
+                if (productIdFound != productId) {
+                    throw new Error(`Slot (${slotId}) does not belong to the product(${productId}) selected)`);
+                }
+            }
+        } catch (err) {
+            return res.status(400).json({ status: false, msg: err.message });
+        }
+
+
         // If cart exist : return current bookingId
         // else return null(indicating you need to generate the bookingId to add products to cart)
         let BookingMaster = new BookingsMaster();
@@ -82,30 +135,35 @@ exports.addToCart = async (req, res) => {
 
         if (currentBookingId == null) {
             // Meaning -- cart does not exist -- bookingId does not exist -- hence create one
-            const { bookingId, bookingDate , booking_fromDatetime , booking_toDatetime} = await BookingMaster.createADefaultBookingMasterEntry(connection, userId, bookingFromDate , bookingToDate , slotIds , bookingCategoryId);
+            const { bookingId, bookingDate, booking_fromDatetime, booking_toDatetime } = await BookingMaster.createADefaultBookingMasterEntry(connection, userId, bookingFromDate, bookingToDate, slotIds, bookingCategoryId);
 
             currentBookingId = bookingId;
             currentBookingDate = bookingDate;
             currentbooking_fromDatetime = booking_fromDatetime;
             currentbooking_toDatetime = booking_toDatetime;
 
-        }else{
+            console.log("currentBookingId is null")
+            console.log("currentbooking_fromDatetime", currentbooking_fromDatetime)
+            console.log("currentbooking_toDatetime", currentbooking_toDatetime)
 
-            ({ currentbooking_fromDatetime , currentbooking_toDatetime} = await BookingMaster.getBookingDates(currentBookingId , connection))
-            
+        } else {
+
+            ({ currentbooking_fromDatetime, currentbooking_toDatetime } = await BookingMaster.getBookingDates(currentBookingId, connection))
+
         }
 
         currentbooking_fromDatetime = moment(currentbooking_fromDatetime).format('YYYY-MM-DD HH:mm:ss');
         currentbooking_toDatetime = moment(currentbooking_toDatetime).format('YYYY-MM-DD HH:mm:ss');
-    
+
         // this dates are validated so taht next time the user adds another product it should match the criteria of existing dates 
-        await BookingMaster.validateBookingDates(bookingCategoryId , bookingFromDate , currentBookingId, currentbooking_fromDatetime , currentbooking_toDatetime , connection);
+        console.log("bookingFromDate", bookingFromDate)
+        await BookingMaster.validateBookingDates(bookingCategoryId, bookingFromDate, currentBookingId, currentbooking_fromDatetime, currentbooking_toDatetime, connection);
 
         // Cart is now created with some currentBookingId -- add products to cart 
 
-        const {updatedbooking_fromDatetime , updatedbooking_toDatetime} = await processSlotIds(slotIds, productId, quantity, currentBookingId, currentbooking_fromDatetime , currentbooking_toDatetime ,connection);
+        const { updatedbooking_fromDatetime, updatedbooking_toDatetime } = await processSlotIds(slotIds, productId, quantity, currentBookingId, currentbooking_fromDatetime, currentbooking_toDatetime, connection);
 
-        
+
         // Update grand total of the Cart & dates 
         await BookingMaster.updateGrandTotalAndDates(connection, currentBookingId, updatedbooking_fromDatetime, updatedbooking_toDatetime);
 
@@ -134,7 +192,11 @@ exports.removefromCart = async (req, res) => {
     const userId = req.user.userId;
 
     try {
-        const {productId, slotId } = req.body;
+        const { productId, slotId } = req.body;
+
+        if(!productId || !slotId){
+            return res.status(400).json({Status : false , msg : "Product & slot is required"})
+        }
 
         let BookingMaster = new BookingsMaster();
         let currentBookingId = await BookingMaster.checkIfCartExists(userId, connection);
@@ -173,11 +235,7 @@ exports.removefromCart = async (req, res) => {
 // View all items in the cart
 exports.viewCart = async (req, res) => {
 
-    // Get it from heaaders later
-    // const userId = req.params.userId;
-
     const userId = req.user.userId;
-
 
     const BookingMaster = new BookingsMaster();
     try {
@@ -199,19 +257,19 @@ exports.viewCart = async (req, res) => {
 };
 
 
-async function processSlotIds(slotIds, productId, quantity, currentBookingId, currentbooking_fromDatetime , currentbooking_toDatetime , connection) {
+async function processSlotIds(slotIds, productId, quantity, currentBookingId, currentbooking_fromDatetime, currentbooking_toDatetime, connection) {
     // Process slot IDs and update cart
     let updatedbooking_fromDatetime;
-    let  updatedbooking_toDatetime;
+    let updatedbooking_toDatetime;
 
     for (const slotId of slotIds) {
-        ({updatedbooking_fromDatetime , updatedbooking_toDatetime} = await processSlot(slotId, productId, quantity, currentBookingId, currentbooking_fromDatetime , currentbooking_toDatetime  , connection));
-    }   
+        ({ updatedbooking_fromDatetime, updatedbooking_toDatetime } = await processSlot(slotId, productId, quantity, currentBookingId, currentbooking_fromDatetime, currentbooking_toDatetime, connection));
+    }
 
-    return {updatedbooking_fromDatetime , updatedbooking_toDatetime};
+    return { updatedbooking_fromDatetime, updatedbooking_toDatetime };
 }
 
-async function processSlot(slotId, productId, quantity, currentBookingId, currentbooking_fromDatetime , currentbooking_toDatetime , connection) {
+async function processSlot(slotId, productId, quantity, currentBookingId, currentbooking_fromDatetime, currentbooking_toDatetime, connection) {
 
     let BookProducts = new BookProduct();
     let BookingMaster = new BookingsMaster();
@@ -220,7 +278,7 @@ async function processSlot(slotId, productId, quantity, currentBookingId, curren
     const slotDetails = await validateSlot(slotId, quantity, connection);
 
     // Update the dates of the slot if needed in bookingsmaster
-    let {updatedbooking_fromDatetime , updatedbooking_toDatetime} = await BookingMaster.updateBookingDates(slotDetails , currentBookingId , currentbooking_fromDatetime , currentbooking_toDatetime , connection );
+    let { updatedbooking_fromDatetime, updatedbooking_toDatetime } = await BookingMaster.updateBookingDates(slotDetails, currentBookingId, currentbooking_fromDatetime, currentbooking_toDatetime, connection);
 
     const existingProductDetails = await BookProducts.getExistingProductDetails(currentBookingId, productId, slotId, connection);
 
@@ -232,7 +290,7 @@ async function processSlot(slotId, productId, quantity, currentBookingId, curren
         await BookProducts.createBookingProductEntry(connection, productId, quantity, slotId, currentBookingId, slotDetails.slotFromDateTime);
     }
 
-    return {updatedbooking_fromDatetime , updatedbooking_toDatetime};
+    return { updatedbooking_fromDatetime, updatedbooking_toDatetime };
 }
 
 

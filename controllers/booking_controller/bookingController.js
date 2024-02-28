@@ -147,11 +147,25 @@ const BookingController = {
         
         const { bookingId, cancel_message } = req.body;
 
+        if(!bookingId){
+            return res.status(400).json({Status : false , msg : "Select a valid booking to be cancelled."})
+        }
+
+        if(roleId == 2 && !cancel_message){
+            return res.status(400).json({Status : false , msg : "A cancellation message is required."})
+        }
+
         // Role id is   1 : Admin -- 2 : Users
 
         // if user cancels : status : CANCELLED (5) 
         // if admin cancels : staus : CANCELLED BY ADMIN(6) with cancel msg 
         try {
+            console.log("bookingId" , bookingId)
+            let count = await BookingsMaster.checkBookingId(bookingId);
+            
+            if(count[0].count == 0){
+                return res.status(404).json({Status : false , msg : "Booking does not exist."})
+            }
             // Fetch the current booking status -- check if it is already cancelled
             let currStatus = await BookingStatuses.getCurrentBookingStatus(bookingId);
 
