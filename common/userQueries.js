@@ -18,7 +18,7 @@ const checkPermission = async (userId,roleId, currentUrl) => {
     query = "select count(p.permissionId) as count_of_permission from rolepermission_relation as rp join permission as p on rp.permissionId = p.permissionId where rp.roleId = ? and p.permissionName = ?"
     queryParam = [roleId, currentUrl];
     let result = await executeQuery(query, queryParam);
-    console.log(result);
+    // console.log(result);
     if(result[0].count_of_permission  > 0){
         return true;
     }else{

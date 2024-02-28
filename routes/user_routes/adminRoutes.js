@@ -9,7 +9,7 @@ router.get('/getRoles',auth, userController.adminGetRoles)
 router.post('/addRole', auth, userController.adminAddRole)
 router.get('/getPermissions',auth, userController.getPermissions)
 // router.post('/set_role_permission',auth, userController.setRolePermission)
-router.put('/updaterRole', auth, userController.updateRole)
+router.put('/updateRole', auth, userController.updateRole)
 router.delete('/deleteRole', auth,  userController.deleteRole);
 router.put('/updateUserRole', auth, userController.updateUserRole)
 router.put('/updateRolePermission', auth, userController.updateRolePermission)

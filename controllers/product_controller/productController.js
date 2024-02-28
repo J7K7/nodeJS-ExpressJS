@@ -47,6 +47,8 @@ const ProductController = {
         bookingCategoryId
       );
       if (!productValidationResult.isValid) {
+        //Fucntion For cleaning Up the local Storage Beacause this request is bad request so we are removing all files from local storage
+        await cleanupUploadedImages(req.files);
         return res
           .status(400)
           .json({ Status: false, msg: productValidationResult.message });
@@ -59,6 +61,8 @@ const ProductController = {
         bookingCategoryId
       );
       if (!slotValidationResult.isValid) {
+        //Fucntion For cleaning Up the local Storage Beacause this request is bad request so we are removing all files from local storage
+        await cleanupUploadedImages(req.files);
         return res
           .status(400)
           .json({ Status: false, msg: slotValidationResult.message });
@@ -69,6 +73,8 @@ const ProductController = {
       const parsedFeatureData = JSON.parse(featureData);
       const featureValidationResult = featureValidation(parsedFeatureData);
       if (!featureValidationResult.isValid) {
+        //Fucntion For cleaning Up the local Storage Beacause this request is bad request so we are removing all files from local storage
+        await cleanupUploadedImages(req.files);
         return res
           .status(400)
           .json({ Status: false, msg: featureValidationResult.message });
@@ -76,6 +82,9 @@ const ProductController = {
       //Validating that Product with same name is exist or not  in database 
       const productCnt=await Product.findProductCountByName(productName);
       if(productCnt>0){
+        // console.log(req.files)
+        //Fucntion For cleaning Up the local Storage Beacause this request is bad request so we are removing all files from local storage
+        await cleanupUploadedImages(req.files);
         return res
           .status(409)
           .json({ Status: false, msg:`Product With This ${productName} name already exists.` });
@@ -97,6 +106,8 @@ const ProductController = {
       const productId = await newproduct.saveProduct();
 
       if (!productId) {
+        //Fucntion For cleaning Up the local Storage Beacause this request is bad request so we are removing all files from local storage
+        await cleanupUploadedImages(req.files);
         return res
           .status(401)
           .send({ Status: false, msg: "Failed to create a new product" });
@@ -109,7 +120,7 @@ const ProductController = {
       );
       // console.log(());
 
-      let imagePaths = [];
+      let images = [];
       var imagesSaved = true;
       // Check if files were uploaded in the request
       if (req.files && req.files.length > 0) {
@@ -150,9 +161,12 @@ const ProductController = {
     } catch (error) {
       // Handle the error thrown by the middleware or any other errors
       console.error("Error in addProduct:", error);
+      //Fucntion For cleaning Up the local Storage Beacause this request is bad request so we are removing all files from local storage
+      await cleanupUploadedImages(req.files);
 
       // If it's an unexpected error, send a generic error response
       res.status(500).json({
+        
         Status: false,
         msg: "Error in Adding Product : " + error.message,
       });
@@ -835,4 +849,21 @@ const ProductController = {
   },
 };
 
+async function cleanupUploadedImages(images) {
+  try {
+    if (images.length > 0) {
+      // Iterate through the image paths and remove each image from local storage
+      images.forEach((image) => {
+        // Implement code to remove image from local storage
+        fs.unlinkSync(
+          path.join(__dirname, "../../public/images/product", image.filename)
+        );
+        // console.log(`Removing image: ${image}`);
+      });
+    }
+  } catch (error) {
+    console.error("Error cleaning up images:", error);
+    // Log or handle the error as needed
+  }
+}
 module.exports = ProductController;

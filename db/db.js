@@ -1,7 +1,11 @@
 const mysql = require('mysql2/promise');
 const config = require('../config');
 const tables = require('./tables')
-const statusController = require('../controllers/booking_controller/statusController')
+const statusController = require('../controllers/booking_controller/statusController');
+const User = require('../models/user_model/user');
+const Role = require('../models/user_model/role');
+const { executeQuery } = require('./connection');
+const Permission = require('../models/user_model/permission');
 
 // Function to check if the database exists or create it
 async function checkDatabaseExistence() {
@@ -11,10 +15,10 @@ async function checkDatabaseExistence() {
 
   try {
     // SQL query to create the database if it does not exist
-    const query = `CREATE DATABASE IF NOT EXISTS BS`;
+    const query = `CREATE DATABASE IF NOT EXISTS ternaam`;
     // Execute the query
     await connection.execute(query);
-    config.db.database = "BS";
+    config.db.database = "ternaam";
     console.log('Database Created If Not Exists !');
   } catch (error) {
     console.error('Error checking database existence:', error);
@@ -69,16 +73,8 @@ async function createTables() {
 
     await connection.execute(tables.bookingCategory)
 
-    //  Insert default entries into the Booking Category table
-    const  category1Query=`INSERT INTO booking_category (booking_category_name, isSelected) VALUES ('slot', false)`;
-    const  category2Query=`INSERT INTO Booking_Category (booking_category_name, isSelected) VALUES ('dayWise', false)`;
-    await connection.execute(category1Query);
-    await connection.execute(category2Query);
-    
-    //we need to add admin roles and all necessary permission in all related tables
 
-    // Initialize the booking_statuses table with fixed statuses 
-    await statusController.addStatus();
+
 
   } catch (error) {
     console.error('Error creating tables:', error);
@@ -88,11 +84,274 @@ async function createTables() {
   }
 }
 
-// Function to set up the database (calls the other two functions)
-async function setupDatabase() {
-  await checkDatabaseExistence();
-  await createTables();
+
+
+
+
+// console.log("before entry");
+
+async function isTableEmpty(tableName, connection) {
+  try {
+    const [rows] = await connection.query(`SELECT COUNT(*) as count FROM ${tableName}`);
+    return rows[0].count === 0;
+  } catch (error) {
+    console.error(`Error checking if table ${tableName} is empty: ${error.message}`);
+    throw error;
+  }
 }
 
-// Call the function to set up the database
-setupDatabase();
+
+
+async function defaultEntries(connection) {
+  try {
+    const isEmptyRoleTable = await isTableEmpty("role", connection);
+    if (isEmptyRoleTable) {
+      await insertDefaultRoles();
+    }
+
+    const isEmptyUserTable = await isTableEmpty("usermaster", connection);
+    if (isEmptyUserTable) {
+      await insertDefaultAdmin();
+    }
+
+    const permissionNames = ['registerRole', 'getRoles', 'addRole', 'getPermissions', 'updateRole', 'deleteRole', 'updateUserRole', 'updateRolePermission', 'displayUserRole', 'displayRolesWithPermission', 'login', 'register', 'getProfile', 'updateProfile', 'deleteProfile', 'updatePassword', 'updateProfilePicture', 'cart', 'addToCart', 'removeFromCart', 'confirmBooking', 'cancelBooking', 'orders', 'addProduct', 'updateFeature', 'addFeature', 'deleteFeature', 'deleteImage', 'addImage', 'getProductDetails', 'getAllProductDetails', 'updateSlotById', 'updateSlotStatus', 'deleteSlotById', 'addSingleSlotByProductId', 'updateProductStatus', 'deleteProduct', 'updateProductDetails'];
+    const isEmptyPermissionTable = await isTableEmpty("permission", connection);
+    if (isEmptyPermissionTable) {
+      await insertDefaultPermissions(permissionNames);
+    }
+
+    const isEmptyRolePermissionTable = await isTableEmpty("rolepermission_relation", connection);
+    if (isEmptyRolePermissionTable) {
+      await insertDefaultRolePermissions();
+    }
+
+    const isEmptyBookingCategoryTable = await isTableEmpty("booking_category", connection);
+    if (isEmptyBookingCategoryTable) {  
+      await insertDefaultBookingCategories(connection);
+    }
+
+    await statusController.addStatus(connection);
+  } catch (error) {
+    console.error(`Error inserting default entries: ${error.message}`);
+    throw error;
+  }
+}
+
+
+
+async function insertDefaultRoles() {
+  try {
+    const adminRole = new Role("admin");
+    const userRole = new Role("user");
+    await adminRole.addRole();
+    await userRole.addRole();
+  } catch (error) {
+    console.error(`Error inserting default roles: ${error.message}`);
+    throw error;
+  }
+}
+
+async function insertDefaultAdmin() {
+  try {
+    const admin = new User(
+      process.env.email,
+      process.env.password,
+      process.env.firstName,
+      process.env.lastName,
+      process.env.phoneNumber
+    );
+    const result = await admin.register();
+    await admin.insertRole(1, result.insertId);
+  } catch (error) {
+    console.error(`Error inserting default admin: ${error.message}`);
+    throw error;
+  }
+}
+
+async function insertDefaultPermissions(permissionNames) {
+  try {
+    for (let name of permissionNames) {
+      const newPermission = new Permission(name);
+      await newPermission.addPermission();
+    }
+  } catch (error) {
+    console.error(`Error inserting default permissions: ${error.message}`);
+    throw error;
+  }
+}
+
+async function insertDefaultRolePermissions() {
+  try {
+    await Role.insertRolePermission(1,[1,2,3,4,5,6,7,8,9,10,13,14,15,16,17,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38]); //admin permissions
+    await Role.insertRolePermission(2,[13,14,15,16,17,18,19,20,21,22,23,30,31]); // user  permissions
+  } catch (error) {
+    console.error(`Error inserting default role permissions: ${error.message}`);
+    throw error;
+  }
+}
+
+async function insertDefaultBookingCategories(connection) {
+  try {
+    const categoryQueries = [
+      `INSERT INTO booking_category (booking_category_name, isSelected) VALUES (?, false)`,
+      `INSERT INTO booking_category (booking_category_name, isSelected) VALUES (?, false)`
+    ];
+    await Promise.all(categoryQueries.map(query => connection.execute(query, ['slot', 'dayWise'])));
+  } catch (error) {
+    console.error(`Error inserting default booking categories: ${error.message}`);
+    throw error;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// async function defaultEntries(connection) {
+//   // console.log("inside default entriwes");
+//   try {
+//     const r = await isTableEmpty("role", connection);
+//     // console.log(r);
+//     if (r) {
+//       const adminRole = new Role("admin");
+//       const userRole = new Role("user");
+//       await adminRole.addRole();
+//       await userRole.addRole();
+//       console.log("inside add role");
+//     }
+
+//     const x = await isTableEmpty("usermaster", connection)
+//     // console.log(x);
+//     if (x) {
+//       const admin = new User(
+//         process.env.email,
+//         process.env.password,
+//         process.env.firstName,
+//         process.env.lastName,
+//         process.env.phoneNumber
+//       );
+//       const result = await admin.register();
+//       await admin.insertRole(1, result.insertId);
+//       console.log("inside add admin");
+//     }
+
+//     const permissionNames = ['registerRole', 'getRoles', 'addRole', 'getPermissions', 'updateRole', 'deleteRole', 'updateUserRole', 'updateRolePermission', 'displayUserRole', 'displayRolesWithPermission', 'login', 'register', 'getProfile', 'updateProfile', 'deleteProfile', 'updatePassword', 'updateProfilePicture', 'cart', 'addToCart', 'removeFromCart', 'confirmBooking', 'cancelBooking', 'orders', 'addProduct', 'updateFeature', 'addFeature', 'deleteFeature', 'deleteImage', 'addImage', 'getProductDetails', 'getAllProductDetails', 'updateSlotById', 'updateSlotStatus', 'deleteSlotById', 'addSingleSlotByProductId', 'updateProductStatus', 'deleteProduct', 'updateProductDetails'];
+//     const  y = await isTableEmpty("permission", connection);
+//     if (y){
+//       for (let i=0;i<permissionNames.length;i++){
+//         let newPermission = new Permission(permissionNames[i]);
+//         await newPermission.addPermission();
+//       }
+//     }
+
+//     const z = await isTableEmpty("rolepermission_relation", connection);
+//     if(z){
+//       console.log("im inside rolepermission");
+//       await Role.insertRolePermission(1,[1,2,3,4,5,6,7,8,9,10,13,14,15,16,17,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38]); //admin permissions
+//       await Role.insertRolePermission(2,[13,14,15,16,17,18,19,20,21,22,23,30,31,]); // user  permissions
+//     }
+
+
+
+//         //  Insert default entries into the Booking Category table
+//     const  category1Query=`INSERT INTO booking_category (booking_category_name, isSelected) VALUES ('slot', false)`;
+//     const  category2Query=`INSERT INTO Booking_Category (booking_category_name, isSelected) VALUES ('dayWise', false)`;
+//     await connection.execute(category1Query);
+//     await connection.execute(category2Query);
+    
+
+//     // Initialize the booking_statuses table with fixed statuses 
+//     await statusController.addStatus();
+//   } catch (error) {
+//     console.log("ERROR in adding default entries: ", error);
+//   } finally {
+//     connection.end();
+//   }
+// }
+
+// defaultEntries()
+
+// console.log("after entry");
+
+
+
+
+
+
+
+
+// Function to set up the database (calls the other two functions)
+
+
+
+
+// async function setupDatabase() {
+//   await checkDatabaseExistence();
+//   await createTables();
+// }
+
+// // Call the function to set up the database
+// (async () => {
+//   console.log("im here");
+//   await setupDatabase();
+
+//   (async () => {
+//       try {
+//           const connection = await mysql.createConnection(config.db);
+//           await defaultEntries(connection);
+//       } catch (error) {
+//           console.error('Error in main:', error);
+//       }
+//   })();
+
+//   console.log("everything done");
+// })();
+
+
+
+
+async function setupDatabase() {
+  try {
+    await checkDatabaseExistence();
+    await createTables();
+  } catch (error) {
+    console.error('Error setting up database:', error);
+    throw error; // Rethrow the error to terminate the process if setup fails
+  }
+}
+
+
+(async () => {
+  try {
+    console.log("Starting database setup...");
+    await setupDatabase();
+    console.log("Database setup completed.");
+    console.log("Inserting default entries...");
+    let connection = await mysql.createConnection(config.db);
+    await defaultEntries(connection);
+    console.log("Default entries inserted successfully.");
+  } catch (error) {
+    console.error('Setup failed:', error);
+    process.exit(1); // Terminate the process with non-zero exit code on failure
+  }
+})();
+
+
+
+
+
+
+
+
+
+
+

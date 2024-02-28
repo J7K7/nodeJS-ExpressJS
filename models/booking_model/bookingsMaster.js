@@ -542,18 +542,7 @@ class BookingsMaster {
 
       for (const bookingId of bookingIds) {
 
-        // LEFT LEFT -- MADE this change for sm.active - will this work ? 
-        // const query = `
-        //         UPDATE bookingsmaster AS bm
-        //         JOIN bookproduct AS bp ON bm.bookingId = bp.bookingId
-        //         JOIN slotmaster AS sm ON bp.slotId = sm.slotId
-        //         SET bm.statusId = ?,
-        //             bm.cancel_message = ?,
-        //             sm.slotBooked = sm.slotBooked - bp.quantity,
-        //             sm.slotActive=1
-        //         WHERE bm.bookingId = ?
-        //       `;
-
+       
         const query = `
                 UPDATE bookingsmaster AS bm
                 JOIN bookproduct AS bp ON bm.bookingId = bp.bookingId
@@ -561,9 +550,20 @@ class BookingsMaster {
                 SET bm.statusId = ?,
                     bm.cancel_message = ?,
                     sm.slotBooked = sm.slotBooked - bp.quantity,
-                    sm.slotActive=CASE WHEN (sm.slotBooked - bp.quantity) <= sm.slotOriginalCapacity THEN true ELSE sm.slotActive END
+                    sm.slotActive=1
                 WHERE bm.bookingId = ?
-        `;
+              `;
+
+        // const query = `
+        //         UPDATE bookingsmaster AS bm
+        //         JOIN bookproduct AS bp ON bm.bookingId = bp.bookingId
+        //         JOIN slotmaster AS sm ON bp.slotId = sm.slotId
+        //         SET bm.statusId = ?,
+        //             bm.cancel_message = ?,
+        //             sm.slotBooked = sm.slotBooked - bp.quantity,
+        //             sm.slotActive=CASE WHEN (sm.slotBooked - bp.quantity) <= sm.slotOriginalCapacity THEN true ELSE sm.slotActive END
+        //         WHERE bm.bookingId = ?
+        // `;
 
         // Prepare the values to be bound to the query
         const values = [statusId, message, bookingId];
