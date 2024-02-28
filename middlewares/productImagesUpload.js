@@ -79,7 +79,7 @@ const handleUploadErrors = (req, res, next) => {
 
       console.log(req.files);
       if (err.message.includes('Unexpected field')) {
-        return res.status(400).json({ Status: false, msg: "Maximum " + maxImagesPerProductNumber+ " images can be uploaded  " +  err.message });
+        return res.status(400).json({ Status: false, msg: "Maximum " + maxImagesPerProductNumber+ " images can be uploaded  " + "Or Missing Fields : Pass with productImages as fieldname" });
       }
       else
      { return res.status(400).json({

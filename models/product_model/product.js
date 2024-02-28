@@ -144,9 +144,10 @@ class Product {
       LEFT JOIN
           product_features AS pf ON pfr.featureId = pf.featureId
       WHERE
-          pm.productId = ?
+          pm.productId = ? 
       `;
       const result= await executeQuery(productDetailsQuery, [productId]);
+      // console.log(result,productId)
       if(result.length === 0){
         throw new Error("No Product Found with this productId")
       }

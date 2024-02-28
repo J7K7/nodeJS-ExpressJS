@@ -232,6 +232,13 @@ const ProductController = {
 
     try {
       // Call the function to fetch product details by ID
+      if (!Number.isInteger(Number(productId)) || Number(productId) <= 0) {
+        return res.status(400).json({
+          Status: false,
+          msg: "Invalid product ID. Please provide a positive integer.",
+        });
+      }
+
       const productDetails = await Product.getProductDetailsById(productId);
 
       // If productDetails is null or undefined, the product doesn't exist
@@ -274,10 +281,6 @@ const ProductController = {
           );
         }
       });
-      // console.log(productDetails);
-      const slots=await Slot.getSlotsById(200);
-      console.log(slots);
-
       // return productDetails;
       res.status(200).json({ Status: true, productData });
     } catch (error) {
@@ -430,7 +433,7 @@ const ProductController = {
   addFeature: async (req, res) => {
     try {
       const { featureData, productId } = req.body;
-      console.log(req.body);
+      // console.log(req.body);
       const parsedFeatureData=JSON.parse(featureData)
       // Validate input data
       const featureValidationResult = featureValidation(parsedFeatureData);
@@ -438,6 +441,12 @@ const ProductController = {
         return res
           .status(400)
           .json({ Status: false, msg: featureValidationResult.message });
+      }
+      if (!Number.isInteger(Number(productId)) || Number(productId) <= 0) {
+        return res.status(400).json({
+          Status: false,
+          msg: "Invalid feature ID. Please Provide in positive Integer Format",
+        });
       }
 
       const product = await Product.findProductById(productId);
@@ -548,6 +557,12 @@ const ProductController = {
           msg: "Product ID and image file are required.",
         });
       }
+      if (!Number.isInteger(Number(productId)) || Number(productId) <= 0) {
+        return res.status(400).json({
+          Status: false,
+          msg: "Invalid product ID. Please provide a positive integer.",
+        });
+      }
       //Counting Exiting Images Count
       const existingImagesCount = await ProductImage.getImageCountForProduct(
         productId
@@ -559,9 +574,9 @@ const ProductController = {
         // Remove uploaded images from the local directory
         for (const file of req.files) {
           // console.log(file);
-          fs.unlinkSync(file.path);
+          // fs.unlinkSync(file.path);
           //This can be also used;
-          // fs.unlinkSync(path.join(__dirname, "../../public/images/product", file.filename));
+          fs.unlinkSync(path.join(__dirname, "../../public/images/product", file.filename));
         }
         return res.status(403).json({
           Status: false,
