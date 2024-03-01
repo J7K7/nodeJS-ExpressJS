@@ -15,10 +15,10 @@ async function checkDatabaseExistence() {
 
   try {
     // SQL query to create the database if it does not exist
-    const query = `CREATE DATABASE IF NOT EXISTS ternaam`;
+    const query = `CREATE DATABASE IF NOT EXISTS finaldb`;
     // Execute the query
     await connection.execute(query);
-    config.db.database = "ternaam";
+    config.db.database = "finaldb";
     console.log('Database Created If Not Exists !');
   } catch (error) {
     console.error('Error checking database existence:', error);
@@ -202,120 +202,6 @@ async function insertDefaultBookingCategories(connection) {
     throw error;
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// async function defaultEntries(connection) {
-//   // console.log("inside default entriwes");
-//   try {
-//     const r = await isTableEmpty("role", connection);
-//     // console.log(r);
-//     if (r) {
-//       const adminRole = new Role("admin");
-//       const userRole = new Role("user");
-//       await adminRole.addRole();
-//       await userRole.addRole();
-//       console.log("inside add role");
-//     }
-
-//     const x = await isTableEmpty("usermaster", connection)
-//     // console.log(x);
-//     if (x) {
-//       const admin = new User(
-//         process.env.email,
-//         process.env.password,
-//         process.env.firstName,
-//         process.env.lastName,
-//         process.env.phoneNumber
-//       );
-//       const result = await admin.register();
-//       await admin.insertRole(1, result.insertId);
-//       console.log("inside add admin");
-//     }
-
-//     const permissionNames = ['registerRole', 'getRoles', 'addRole', 'getPermissions', 'updateRole', 'deleteRole', 'updateUserRole', 'updateRolePermission', 'displayUserRole', 'displayRolesWithPermission', 'login', 'register', 'getProfile', 'updateProfile', 'deleteProfile', 'updatePassword', 'updateProfilePicture', 'cart', 'addToCart', 'removeFromCart', 'confirmBooking', 'cancelBooking', 'orders', 'addProduct', 'updateFeature', 'addFeature', 'deleteFeature', 'deleteImage', 'addImage', 'getProductDetails', 'getAllProductDetails', 'updateSlotById', 'updateSlotStatus', 'deleteSlotById', 'addSingleSlotByProductId', 'updateProductStatus', 'deleteProduct', 'updateProductDetails'];
-//     const  y = await isTableEmpty("permission", connection);
-//     if (y){
-//       for (let i=0;i<permissionNames.length;i++){
-//         let newPermission = new Permission(permissionNames[i]);
-//         await newPermission.addPermission();
-//       }
-//     }
-
-//     const z = await isTableEmpty("rolepermission_relation", connection);
-//     if(z){
-//       console.log("im inside rolepermission");
-//       await Role.insertRolePermission(1,[1,2,3,4,5,6,7,8,9,10,13,14,15,16,17,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38]); //admin permissions
-//       await Role.insertRolePermission(2,[13,14,15,16,17,18,19,20,21,22,23,30,31,]); // user  permissions
-//     }
-
-
-
-//         //  Insert default entries into the Booking Category table
-//     const  category1Query=`INSERT INTO booking_category (booking_category_name, isSelected) VALUES ('slot', false)`;
-//     const  category2Query=`INSERT INTO Booking_Category (booking_category_name, isSelected) VALUES ('dayWise', false)`;
-//     await connection.execute(category1Query);
-//     await connection.execute(category2Query);
-    
-
-//     // Initialize the booking_statuses table with fixed statuses 
-//     await statusController.addStatus();
-//   } catch (error) {
-//     console.log("ERROR in adding default entries: ", error);
-//   } finally {
-//     connection.end();
-//   }
-// }
-
-// defaultEntries()
-
-// console.log("after entry");
-
-
-
-
-
-
-
-
-// Function to set up the database (calls the other two functions)
-
-
-
-
-// async function setupDatabase() {
-//   await checkDatabaseExistence();
-//   await createTables();
-// }
-
-// // Call the function to set up the database
-// (async () => {
-//   console.log("im here");
-//   await setupDatabase();
-
-//   (async () => {
-//       try {
-//           const connection = await mysql.createConnection(config.db);
-//           await defaultEntries(connection);
-//       } catch (error) {
-//           console.error('Error in main:', error);
-//       }
-//   })();
-
-//   console.log("everything done");
-// })();
-
 
 
 

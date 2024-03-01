@@ -13,8 +13,6 @@ const bookingRoutes = require('./routes/booking_routes/booking')
 // const formData =require("express-form-data");
 var app = express();
 
-
-
 require('./db/db');
 
 app.use(logger('dev'));
@@ -56,3 +54,4 @@ console.log(process.env.APP_PORT)
 app.listen(PORT, () => {
     console.log(`App is listening on http://localhost:${PORT}`);
 })
+

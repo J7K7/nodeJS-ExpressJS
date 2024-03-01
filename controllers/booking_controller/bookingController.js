@@ -20,7 +20,6 @@ const BookingController = {
     confirmBooking: async (req, res) => {
        
         const userId = req.user.userId;
-
         // Start a transaction
         const connection = await createPool();
         await connection.beginTransaction();
@@ -151,7 +150,7 @@ const BookingController = {
             return res.status(400).json({Status : false , msg : "Select a valid booking to be cancelled."})
         }
 
-        if(roleId == 2 && !cancel_message){
+        if(roleId == 1 && !cancel_message){
             return res.status(400).json({Status : false , msg : "A cancellation message is required."})
         }
 
@@ -160,7 +159,7 @@ const BookingController = {
         // if user cancels : status : CANCELLED (5) 
         // if admin cancels : staus : CANCELLED BY ADMIN(6) with cancel msg 
         try {
-            console.log("bookingId" , bookingId)
+
             let count = await BookingsMaster.checkBookingId(bookingId);
             
             if(count[0].count == 0){
@@ -180,10 +179,9 @@ const BookingController = {
                 await BookingsMaster.cancelBookingsByAdminOrUser([bookingId], 5, null)
             }
 
-            res.status(200).json({ Status: true, msg: `Booking with Id ${bookingId} cancelled successfully` });
+            return res.status(200).json({ Status: true, msg: `Booking with Id ${bookingId} cancelled successfully` });
         } catch (err) {
-            console.log(err);
-            res.status(400).json({ Status: false, msg: `Error cancelling the Booking`, err: err.message });
+            return res.status(400).json({ Status: false, msg: `Error cancelling the Booking`, err: err.message });
         }
     }
 }

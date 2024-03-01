@@ -19,15 +19,16 @@ router.get('/cart' ,auth, cartController.viewCart);
  *          1) Slot 
  *              - bookingCategoryId : 1
  *              - bookingFromDate (YYYY-MM-DD)
- *              - slotIds : [] (Array of one slot Id selected)
+ *              - slotIds : [] (Array of multiple slot Id selected)
  *              - productId
- *              - quantity
+ *              - quantity : [] (For slot : One can add diff quantity for each slot selected)
+ *                              
  *          2) Day 
  *              - bookingCategoryId : 2
  *              - bookingFromDate (YYYY-MM-DD)
  *              - bookingToDate (YYYY-MM-DD)
  *              - productId
- *              - quantity
+ *              - quantity : [] (For Day : Add only one quantity in the array - which will be same for all the days)
  */
 router.post('/addToCart' , auth, cartController.addToCart)
 

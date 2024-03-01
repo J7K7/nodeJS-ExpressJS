@@ -8,17 +8,10 @@ class UserBookingRelation {
 
     async save(connection){
         let sql = `
-            insert into userbooking_relation (
-                userId , 
-                bookingId
-            ) values (
-                '${this.userId}',
-                '${this.bookingId}'
-            )
-        `
+            insert into userbooking_relation (userId , bookingId) values (?,?)`
         try{
             // const res = await executeQuery(sql);
-            const res = await connection.execute(sql);
+            const res = await connection.execute(sql, [this.userId, this.bookingId]);
             return res;
         }catch(err){
             throw new Error('Error executing UserBookingRelation saving query:', err);

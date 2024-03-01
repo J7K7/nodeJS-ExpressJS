@@ -155,7 +155,7 @@ class Slot {
         result = await executeQuery(query, [slotId]);
       }
 
-      console.log("result" , result)
+      // console.log("result" , result)
 
       if (result.length > 0) {
         return result[0];
@@ -247,7 +247,7 @@ class Slot {
         const nextDayDate = moment(result.slotDate).add(1, "day");
         slotToDateTime = combineDateTime(nextDayDate, toTime);
       }
-      console.log();
+
       // Execute the update query with the new slot details
       result = await executeQuery(updateQuery, [
         slotFromDateTime,

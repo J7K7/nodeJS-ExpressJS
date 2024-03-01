@@ -7,7 +7,7 @@ const announcementsTable = `CREATE TABLE IF NOT EXISTS announcements (
     toDate date DEFAULT NULL,
     isDeleted tinyint NOT NULL DEFAULT 0,
     PRIMARY KEY (announcementId)
-  ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
   `
 
   const bookingStatusesTable = `CREATE TABLE IF NOT EXISTS booking_statuses (
@@ -30,7 +30,7 @@ cancel_message text,
 PRIMARY KEY (bookingId),
 KEY status_idx (statusId),
 CONSTRAINT status FOREIGN KEY (statusId) REFERENCES booking_statuses (statusId)
-) ENGINE=InnoDB AUTO_INCREMENT=912 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 `;
 
 const bookProductTable = `
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS bookproduct (
   CONSTRAINT fk_bookproduct_bookingId FOREIGN KEY (bookingId) REFERENCES bookingsmaster (bookingId),
   CONSTRAINT fk_bookproduct_productId FOREIGN KEY (productId) REFERENCES productmaster (productId),
   CONSTRAINT fk_bookproduct_slotId FOREIGN KEY (slotId) REFERENCES slotmaster (slotId)
-) ENGINE=InnoDB AUTO_INCREMENT=4161 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 `
 
 

@@ -29,61 +29,66 @@ const Order = require('../../models/booking_model/orders')
 //     If normal User : Find the orders of the particular user 
 //     If Admin : Find all the orders 
 // */
-exports.viewAllOrders = async (req, res) => {
 
-    const userId = req.user.userId;
-    const roleId = req.user.roleId;
+const ordersController = {
+    viewAllOrders : async (req, res) => {
+
+        const userId = req.user.userId;
+        const roleId = req.user.roleId;
+        
+        // const role = 'user';
+        let orders = {};
     
-    // const role = 'user';
-    let orders = {};
-
-    try {
-        let ordersData;
-
-        if (roleId == 1) {
-            ordersData = await Order.getAllOrders();
-        } else if(roleId == 2){
-            ordersData = await Order.getAllOrdersOfUser(userId);
-        }
-
-        ordersData.forEach(data => {
-            // Check if the order already exists, if not create a new one
-            if (!orders[data.bookingId]) {
-                orders[data.bookingId] = new Order(
-                    data.bookingId,
-                    data.bookingDate,
-                    data.booking_fromDatetime,
-                    data.booking_toDatetime,
-                    data.statusId,
-                    data.grandTotal
-                );
+        try {
+            let ordersData;
+    
+            if (roleId == 1) {
+                ordersData = await Order.getAllOrders();
+            } else if(roleId == 2){
+                ordersData = await Order.getAllOrdersOfUser(userId);
             }
-
-            // Check if the product already exists in the order
-            let product = orders[data.bookingId].products.find(prod => prod.productId === data.productId);
-
-            // if not create a new one
-            if (!product) {
-                orders[data.bookingId].addProduct(
+    
+            ordersData.forEach(data => {
+                // Check if the order already exists, if not create a new one
+                if (!orders[data.bookingId]) {
+                    orders[data.bookingId] = new Order(
+                        data.bookingId,
+                        data.bookingDate,
+                        data.booking_fromDatetime,
+                        data.booking_toDatetime,
+                        data.statusId,
+                        data.grandTotal
+                    );
+                }
+    
+                // Check if the product already exists in the order
+                let product = orders[data.bookingId].products.find(prod => prod.productId === data.productId);
+    
+                // if not create a new one
+                if (!product) {
+                    orders[data.bookingId].addProduct(
+                        data.productId,
+                        data.productName,
+                        data.imageId,
+                        data.quantity
+                    );
+                }
+    
+                // Add slot details to the product
+                orders[data.bookingId].addSlot(
                     data.productId,
-                    data.productName,
-                    data.imageId,
-                    data.quantity
+                    data.slotId,
+                    data.slotFromDateTime,
+                    data.slotToDateTime,
+                    data.price
                 );
-            }
-
-            // Add slot details to the product
-            orders[data.bookingId].addSlot(
-                data.productId,
-                data.slotId,
-                data.slotFromDateTime,
-                data.slotToDateTime,
-                data.price
-            );
-        });
-
-        res.status(200).json({ Status: true, msg: "Orders Displayed Successfully", totalBookings: Object.keys(orders).length, bookings: orders });
-    } catch (err) {
-        res.status(400).json({ Status: false, msg: "Error Viewing Orders. Try Again !", err : err.message});
+            });
+    
+            return res.status(200).json({ Status: true, msg: "Orders Displayed Successfully", totalBookings: Object.keys(orders).length, bookings: orders });
+        } catch (err) {
+            return res.status(400).json({ Status: false, msg: "Error Viewing Orders. Try Again !", err : err.message});
+        }
     }
-};
+}
+
+module.exports = ordersController;

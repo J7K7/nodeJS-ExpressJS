@@ -243,6 +243,21 @@ class Product {
   // admin can change the activeToDate untill the current Date + adavnceBookingDuration
   static async updateProductDetailsByProductId (productId , productName, productDescription, active_toDate, productCapacity )  {
     try {
+      const selectQuery = `
+          SELECT COUNT(*) AS productCount
+          FROM productmaster 
+          WHERE productName = ? and productId !=? 
+      `;
+
+      // Execute the query and await the result
+      const cntResult = await executeQuery(selectQuery, [productName,productId]);
+
+      // Extract the product count from the result
+      const productCount = cntResult[0].productCount;
+      console.log(cntResult);
+      if (productCount > 0){
+         throw new Error('This product name already exists');
+       }
       let query = "update productmaster set productName=?, productDescription=?, active_toDate=?, productCapacity=? where productId = ?"
       let queryparam = [ productName, productDescription, active_toDate, productCapacity, productId];
       const result = await executeQuery(query, queryparam);

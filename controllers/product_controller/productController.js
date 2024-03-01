@@ -824,6 +824,12 @@ const ProductController = {
           msg: "Please provide a message for cancelling booked slots.", // The error message to be sent to the client
         });
       }
+      if (!Number.isInteger(Number(slotId)) || Number(slotId) <= 0) {
+        return res.status(400).json({
+          Status: false,
+          msg: "Invalid slot ID. Please provide a positive integer.",
+        });
+      }
     
       // In this if any ongoing booking is there than we can not cancel it.
       // So for that we comparing the bookingFromDateTime with the current date if it is greater than this than we can delete that bookings.

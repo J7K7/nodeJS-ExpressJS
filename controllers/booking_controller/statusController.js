@@ -5,13 +5,13 @@ exports.getAllStatus = async (req, res) => {
     try {
         const result = await BookingStatuses.findAll();
 
-        res.status(200).json({
+        return res.status(200).json({
             Status: true,
             message: 'Booking Status displayed successfully',
             data: result,
         });
     } catch (err) {
-        res.status(400).json({
+        return res.status(400).json({
             Status: false,
             message: 'Cannot retrieve Booking Statuses',
             error: err,
@@ -37,14 +37,14 @@ exports.getCurrentBookingStatus = async (req, res) => {
 
         const result = await BookingStatuses.getCurrentBookingStatus(bookingId);
 
-        res.status(200).json({
+        return res.status(200).json({
             Status: true,
             message: 'Current Booking Status displayed successfully',
             data: result,
         });
 
     } catch (err) {
-        res.status(400).json({
+        return res.status(400).json({
             Status: false,
             message: 'Cannot retrieve Current Booking Statuses',
             error: err,

@@ -3,8 +3,8 @@ const { executeQuery } = require("../../db/connection");
 const Slot = require("../product_model/slot");
 const moment = require("moment");
 const { validateDateTime } = require("../../common/dateFormat");
-const BookingStatuses = require('../../models/booking_model/bookingStatuses')
-const UserBookingRelation = require('../../models/booking_model/userbooking_relation')
+const BookingStatuses = require("../../models/booking_model/bookingStatuses");
+const UserBookingRelation = require("../../models/booking_model/userbooking_relation");
 
 class BookingsMaster {
   constructor(
@@ -45,8 +45,8 @@ class BookingsMaster {
       const res = await connection.execute(sql);
       return res;
     } catch (err) {
-      console.log(err);
-      throw new Error("Error saving booking entry:", err);
+      // console.log(err);
+      throw new Error("Error saving booking entry:" + err.message);
     }
   }
 
@@ -73,13 +73,15 @@ class BookingsMaster {
             AND bm.statusId = 1;
         `;
 
-
       if (connection == null) {
         const bookingIdWithStatusAddedToCart = await executeQuery(
           bookingIdWithStatusAddedToCartQuery,
           [userId]
         );
-        console.log("bookingIdWithStatusAddedToCart", bookingIdWithStatusAddedToCart);
+        console.log(
+          "bookingIdWithStatusAddedToCart",
+          bookingIdWithStatusAddedToCart
+        );
 
         return bookingIdWithStatusAddedToCart.length === 1
           ? bookingIdWithStatusAddedToCart[0].bookingId
@@ -89,7 +91,6 @@ class BookingsMaster {
           bookingIdWithStatusAddedToCartQuery,
           [userId]
         );
-
 
         return bookingIdWithStatusAddedToCart[0].length === 1
           ? bookingIdWithStatusAddedToCart[0][0].bookingId
@@ -105,12 +106,10 @@ class BookingsMaster {
         SELECT COUNT(*) as count FROM bookingsmaster WHERE bookingId = ${bookingId};
     `;
 
-    try{
+    try {
       return await executeQuery(sql);
-
-
-    }catch(err){
-      throw new Error('Invalid BookingId')
+    } catch (err) {
+      throw new Error("Invalid BookingId");
     }
   }
 
@@ -157,26 +156,34 @@ class BookingsMaster {
     JOIN productmaster pm ON p.productId = pm.productId
     WHERE p.bookingId = ?;`;
 
-    const cartItems = await executeQuery(getCartItemsQuery, [bookingId]);
-    return cartItems;
+    try {
+      const cartItems = await executeQuery(getCartItemsQuery, [bookingId]);
+      return cartItems;
+    } catch (err) {
+      throw new Error("Error getting cart items " + err);
+    }
   }
 
   async deleteCartEntryIfEmpty(currentBookingId, connection) {
-    const checkCartItemsQuery = `
-        SELECT 1 FROM bookproduct WHERE bookingId = ?;
-    `;
-    const [checkCartItems] = await connection.execute(checkCartItemsQuery, [
-      currentBookingId,
-    ]);
+    try {
+      const checkCartItemsQuery = `
+      SELECT 1 FROM bookproduct WHERE bookingId = ?;
+  `;
+      const [checkCartItems] = await connection.execute(checkCartItemsQuery, [
+        currentBookingId,
+      ]);
 
-    if (checkCartItems.length === 0) {
-      const deleteQueries = [
-        `DELETE FROM userbooking_relation WHERE bookingId = ?;`,
-        `DELETE FROM bookingsmaster WHERE bookingId = ?;`,
-      ];
-      for (const query of deleteQueries) {
-        await connection.execute(query, [currentBookingId]);
+      if (checkCartItems.length === 0) {
+        const deleteQueries = [
+          `DELETE FROM userbooking_relation WHERE bookingId = ?;`,
+          `DELETE FROM bookingsmaster WHERE bookingId = ?;`,
+        ];
+        for (const query of deleteQueries) {
+          await connection.execute(query, [currentBookingId]);
+        }
       }
+    } catch (err) {
+      throw new Error("Error deleting cart if empty " + err);
     }
   }
 
@@ -186,23 +193,27 @@ class BookingsMaster {
     booking_fromDatetime,
     booking_toDatetime
   ) {
-    // Update grand total of the cart
-    const sql = ` 
-    UPDATE bookingsmaster AS bm
-    SET bm.grandTotal =(SELECT SUM(price*quantity)
-        FROM bookproduct
-        where bookingId=?),
-        booking_fromDatetime = ?, 
-        booking_toDatetime = ?,
-        timestamp = NOW()
-        where bookingId=? ;`;
+    try {
+      // Update grand total of the cart
+      const sql = ` 
+UPDATE bookingsmaster AS bm
+SET bm.grandTotal =(SELECT SUM(price*quantity)
+    FROM bookproduct
+    where bookingId=?),
+    booking_fromDatetime = ?, 
+    booking_toDatetime = ?,
+    timestamp = NOW()
+    where bookingId=? ;`;
 
-    await connection.execute(sql, [
-      currentBookingId,
-      booking_fromDatetime,
-      booking_toDatetime,
-      currentBookingId,
-    ]);
+      await connection.execute(sql, [
+        currentBookingId,
+        booking_fromDatetime,
+        booking_toDatetime,
+        currentBookingId,
+      ]);
+    } catch (err) {
+      throw new Error("Error updating grand total & Dates" + err);
+    }
   }
 
   async createADefaultBookingMasterEntry(
@@ -315,8 +326,6 @@ class BookingsMaster {
         grandTotal
       );
 
-      // console.log("Booking Entry : ", bookingEntry)
-
       const result1 = await bookingEntry.save(connection);
 
       const bookingId = result1[0].insertId;
@@ -331,10 +340,8 @@ class BookingsMaster {
         booking_toDatetime,
       };
     } catch (err) {
-      console.log(err);
-      throw new Error(
-        "Error generating the bookingId. Try Again!" + err.message
-      );
+      // console.log(err);
+      throw new Error("Error generating the bookingId. Try Again!", err);
     }
   }
 
@@ -346,112 +353,143 @@ class BookingsMaster {
     currentbooking_toDatetime,
     connection
   ) {
+    try {
+      // console.log(booking_fromDatetime,booking_toDatetime);
+      if (bookingCategoryId == 1) {
+        // VALIDATION : the booking_fromDatetime should be greater then the currentDate time then only the user can book the slot
 
-    // console.log(booking_fromDatetime,booking_toDatetime);
-    if (bookingCategoryId == 1) {
-      // VALIDATION : the booking_fromDatetime should be greater then the currentDate time then only the user can book the slot
+        // Get the current date time
+        const currentDate = moment().format("YYYY-MM-DD");
+        // Extract the date part from booking_fromDatetime
+        let currentbooking_fromDate = moment(
+          currentbooking_fromDatetime
+        ).format("YYYY-MM-DD");
 
-      // Get the current date time
-      const currentDate = moment().format("YYYY-MM-DD");
-      // Extract the date part from booking_fromDatetime
-      let currentbooking_fromDate = moment(currentbooking_fromDatetime).format(
-        "YYYY-MM-DD"
-      );
+        // Check if the booking_fromDatetime is before the current date time
+        if (moment(currentbooking_fromDate).isBefore(currentDate)) {
+          // The booking date should be greater than the current datetime.
+          throw new Error("Select an appropriate date the can be fullfilled.");
+        }
 
-
-      // Check if the booking_fromDatetime is before the current date time
-      if (moment(currentbooking_fromDate).isBefore(currentDate)) {
-        // The booking date should be greater than the current datetime.
-        throw new Error("Select an appropriate date the can be fullfilled.");
+        if (bookingFromDate !== currentbooking_fromDate) {
+          throw new Error(
+            "At a time , you can book products with the same Date."
+          );
+        }
       }
 
-      if (bookingFromDate !== currentbooking_fromDate) {
-        throw new Error(
-          "At a time , you can book products with the same Date."
+      if (bookingCategoryId == 2) {
+        // VALIDATION : User is only allowed to book multiple products with the same booking_fromDatetime & booking_toDatetime
+        const findExistingBookingDatesQuery = `
+        SELECT booking_fromDatetime, booking_toDatetime FROM bookingsmaster WHERE bookingId = ?
+    `;
+
+        const [existingBookingDates] = await connection.execute(
+          findExistingBookingDatesQuery,
+          [currentBookingId]
         );
+
+        if (
+          moment(existingBookingDates[0].booking_fromDatetime).format(
+            "YYYY-MM-DD"
+          ) !== moment(currentbooking_fromDatetime).format("YYYY-MM-DD") ||
+          moment(existingBookingDates[0].booking_toDatetime).format(
+            "YYYY-MM-DD"
+          ) !== moment(currentbooking_toDatetime).format("YYYY-MM-DD")
+        ) {
+          throw new Error(
+            "You cannot add Products to cart that differ in Booking From Date & Booking To Date"
+          );
+        }
       }
-    }
-
-    if (bookingCategoryId == 2) {
-      // VALIDATION : User is only allowed to book multiple products with the same booking_fromDatetime & booking_toDatetime
-      const findExistingBookingDatesQuery = `
-            SELECT booking_fromDatetime, booking_toDatetime FROM bookingsmaster WHERE bookingId = ?
-        `;
-
-      const [existingBookingDates] = await connection.execute(
-        findExistingBookingDatesQuery,
-        [currentBookingId]
-      );
-
-      if (
-        moment(existingBookingDates[0].booking_fromDatetime).format(
-          "YYYY-MM-DD"
-        ) !== moment(currentbooking_fromDatetime).format("YYYY-MM-DD") ||
-        moment(existingBookingDates[0].booking_toDatetime).format(
-          "YYYY-MM-DD"
-        ) !== moment(currentbooking_toDatetime).format("YYYY-MM-DD")
-      ) {
-        throw new Error(
-          "You cannot add Products to cart that differ in Booking From Date & Booking To Date"
-        );
-      }
+    } catch (err) {
+      throw new Error("Error validating booking Dates" + err);
     }
   }
 
   async checkAndHandleCancelledStatus(connection, bookingId) {
-    const [checkStatus] = await connection.execute(
-      `
-        SELECT statusId FROM bookingsmaster WHERE bookingId = ?
-    `,
-      [bookingId]
-    );
-
-    if (checkStatus[0].statusId === 5) {
-      await BookingsMaster.updateStatusAndCancelMessage(
-        connection,
-        bookingId,
-        6,
-        "The quantity to be booked is not available"
+    try {
+      const [checkStatus] = await connection.execute(
+        `
+          SELECT statusId FROM bookingsmaster WHERE bookingId = ?
+      `,
+        [bookingId]
       );
-      return true;
-    }
 
-    return false;
+      if (checkStatus[0].statusId === 5) {
+        await BookingsMaster.updateStatusAndCancelMessage(
+          connection,
+          bookingId,
+          6,
+          "The quantity to be booked is not available"
+        );
+        return true;
+      }
+
+      return false;
+    } catch (err) {
+      throw new Error("Error handling cancelled status" + err);
+    }
   }
 
-  async updateBookingDates(slotDetails, currentBookingId, currentbooking_fromDatetime, currentbooking_toDatetime, connection) {
+  async updateBookingDates(
+    slotDetails,
+    currentBookingId,
+    currentbooking_fromDatetime,
+    currentbooking_toDatetime,
+    connection
+  ) {
+    try {
+      if (
+        moment(slotDetails.slotFromDateTime).isBefore(
+          currentbooking_fromDatetime
+        )
+      ) {
+        currentbooking_fromDatetime = slotDetails.slotFromDateTime;
+      }
 
+      if (
+        moment(slotDetails.slotToDateTime).isAfter(currentbooking_toDatetime)
+      ) {
+        currentbooking_toDatetime = slotDetails.slotToDateTime;
+      }
 
-    if (moment(slotDetails.slotFromDateTime).isBefore(currentbooking_fromDatetime)) {
-      currentbooking_fromDatetime = slotDetails.slotFromDateTime
+      let sql = `
+          update bookingsmaster 
+          set booking_fromDatetime = ?, booking_toDatetime = ? where bookingId = ?
+      `;
+
+      await connection.execute(sql, [
+        currentbooking_fromDatetime,
+        currentbooking_toDatetime,
+        currentBookingId,
+      ]);
+
+      return {
+        updatedbooking_fromDatetime: currentbooking_fromDatetime,
+        updatedbooking_toDatetime: currentbooking_toDatetime,
+      };
+    } catch (err) {
+      throw new Error("Error updating booking dates" + err);
     }
-
-    if (moment(slotDetails.slotToDateTime).isAfter(currentbooking_toDatetime)) {
-      currentbooking_toDatetime = slotDetails.slotToDateTime;
-    }
-
-    let sql = `
-        update bookingsmaster 
-        set booking_fromDatetime = ?, booking_toDatetime = ? where bookingId = ?
-    `
-
-    await connection.execute(sql, [currentbooking_fromDatetime, currentbooking_toDatetime, currentBookingId])
-
-    return { updatedbooking_fromDatetime: currentbooking_fromDatetime, updatedbooking_toDatetime: currentbooking_toDatetime }
   }
-
 
   async getBookingDates(bookingId, connection) {
-    const sql = `
-      select booking_fromDatetime , booking_toDatetime from bookingsmaster where bookingId = ?;
-  `
+    try {
+      const sql = `
+  select booking_fromDatetime , booking_toDatetime from bookingsmaster where bookingId = ?;
+`;
 
-    const [result] = await connection.execute(sql, [bookingId]);
+      const [result] = await connection.execute(sql, [bookingId]);
 
-    return { currentbooking_fromDatetime: result[0].booking_fromDatetime, currentbooking_toDatetime: result[0].booking_toDatetime };
+      return {
+        currentbooking_fromDatetime: result[0].booking_fromDatetime,
+        currentbooking_toDatetime: result[0].booking_toDatetime,
+      };
+    } catch (err) {
+      throw new Error("Error getting booking Dates" + err);
+    }
   }
-
-
 
   // From Here all updates written by JIM Patel
 
@@ -510,32 +548,34 @@ class BookingsMaster {
   // It returns an array of bookingIds for future confirmed bookings that have a statusId of 3 (confirmed)
   // and a booking_fromDatetime greater than the current date and time than it means that this booking not started yet.
   static async findAllFutureConfirmBookingsBySlotId(slotId) {
-    // Get the current date and time in the specified format
-    const currentDate = moment().format("YYYY-MM-DD HH:mm:ss");
-    // console.log(currentDate)
+    try {
+      // Get the current date and time in the specified format
+      const currentDate = moment().format("YYYY-MM-DD HH:mm:ss");
+      // console.log(currentDate)
 
-    // Construct the SQL query to find future confirmed bookings by slot ID
-    const query = `
-          SELECT DISTINCT bm.bookingId
-          FROM bookingsmaster bm
-          JOIN bookproduct bp ON bm.bookingId = bp.bookingId
-          WHERE bp.slotId = ?   
-          AND bm.statusId = 3     
-          AND bm.booking_fromDatetime > ? 
-      `;
-    // Check That the SlotId is valid Or not.If it's not then Throw an Error
-    const slot = await Slot.getSlotById(slotId, null);
+      // Construct the SQL query to find future confirmed bookings by slot ID
+      const query = `
+           SELECT DISTINCT bm.bookingId
+           FROM bookingsmaster bm
+           JOIN bookproduct bp ON bm.bookingId = bp.bookingId
+           WHERE bp.slotId = ?   
+           AND bm.statusId = 3     
+           AND bm.booking_fromDatetime > ? 
+       `;
+      // Check That the SlotId is valid Or not.If it's not then Throw an Error
+      const slot = await Slot.getSlotById(slotId, null);
 
-    console.log("slot", slot)
+      // Execute the SQL query with the slot ID and current date as parameters
+      const result = await executeQuery(query, [slotId, currentDate]);
 
-    // Execute the SQL query with the slot ID and current date as parameters
-    const result = await executeQuery(query, [slotId, currentDate]);
+      // Extract bookingIds from the query result
+      const bookingIds = result.map((row) => row.bookingId);
 
-    // Extract bookingIds from the query result
-    const bookingIds = result.map((row) => row.bookingId);
-
-    // Return the array of bookingIds
-    return bookingIds;
+      // Return the array of bookingIds
+      return bookingIds;
+    } catch (err) {
+      throw new Error("Error finding future confirm bookings by slotIDs" + err);
+    }
   }
 
   //Cancels bookings by admin for the specified booking IDs
@@ -544,8 +584,6 @@ class BookingsMaster {
       // In this we are changing the statusId of the bookingmaster and deacresing the quantity  of slots in  slotmaster table
 
       for (const bookingId of bookingIds) {
-
-       
         const query = `
                 UPDATE bookingsmaster AS bm
                 JOIN bookproduct AS bp ON bm.bookingId = bp.bookingId

@@ -75,17 +75,21 @@ class BookProduct {
             SELECT quantity FROM bookproduct
             WHERE bookingId = ? AND productId = ? AND slotId = ?;
         `;
-    const [result] = await connection.execute(checkItemQuery, [
-      currentBookingId,
-      productId,
-      slotId,
-    ]);
+    try {
+      const [result] = await connection.execute(checkItemQuery, [
+        currentBookingId,
+        productId,
+        slotId,
+      ]);
 
-    if (result.length == 0) return { itemExists: false };
-    return {
-      itemExists: result.length > 0,
-      currentQuantity: result[0].quantity,
-    };
+      if (result.length == 0) return { itemExists: false };
+      return {
+        itemExists: result.length > 0,
+        currentQuantity: result[0].quantity,
+      };
+    } catch (err) {
+      throw new Error("Error Checking Item in the cart ", err);
+    }
   }
 
   async createBookingProductEntry(
@@ -172,12 +176,16 @@ class BookProduct {
   ) {
     // Update quantity of existing product in the cart
     const sql = `UPDATE bookproduct SET quantity = ? WHERE productId = ? AND slotId = ? AND bookingId = ?`;
-    await connection.execute(sql, [
-      quantityBooked,
-      productId,
-      slotId,
-      currentBookingId,
-    ]);
+    try {
+      await connection.execute(sql, [
+        quantityBooked,
+        productId,
+        slotId,
+        currentBookingId,
+      ]);
+    } catch (err) {
+      throw new Error("Error Updating Product Quantity", err);
+    }
   }
 
   async getExistingProductDetails(
@@ -188,7 +196,15 @@ class BookProduct {
   ) {
     // Get existing product details in the cart
     const sql = `SELECT productId, quantity, slotId, price FROM bookproduct WHERE bookingId = ? AND productId = ? AND slotId = ?`;
-    return await connection.execute(sql, [currentBookingId, productId, slotId]);
+    try {
+      return await connection.execute(sql, [
+        currentBookingId,
+        productId,
+        slotId,
+      ]);
+    } catch (err) {
+      throw new Error("Error fetching existing product details", err);
+    }
   }
 
   async removeCartItem(
@@ -199,17 +215,21 @@ class BookProduct {
     slotId
   ) {
     let result = null;
-    if (currentQuantity <= 1) {
-      // If quantity is 1, remove the item from the cart
-      const deleteItemQuery = `
-                DELETE FROM bookproduct
-                WHERE bookingId = ? AND productId = ? AND slotId = ?;
-            `;
-      result = await connection.execute(deleteItemQuery, [
-        currentBookingId,
-        productId,
-        slotId,
-      ]);
+    try {
+      if (currentQuantity <= 1) {
+        // If quantity is 1, remove the item from the cart
+        const deleteItemQuery = `
+                  DELETE FROM bookproduct
+                  WHERE bookingId = ? AND productId = ? AND slotId = ?;
+              `;
+        result = await connection.execute(deleteItemQuery, [
+          currentBookingId,
+          productId,
+          slotId,
+        ]);
+      }
+    } catch (err) {
+      throw new Error("Error removing cart items", err);
     }
 
     // else if(currentQuantity>1) {
