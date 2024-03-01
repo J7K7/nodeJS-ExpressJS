@@ -1,0 +1,1 @@
+{"timestamp":"2024-03-01T11:55:02.588Z","request":{},"error":{"message":"error is not defined","stack":"ReferenceError: error is not defined\n    at login (D:\\Rishabh\\Booking System Backend\\controllers\\user_controller\\loginController.js:56:25)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)"}}
