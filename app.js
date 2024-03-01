@@ -8,6 +8,7 @@ const adminRoutes =  require('./routes/user_routes/adminRoutes')
 var productRouter=require("./routes/product_routes/productRoutes")
 const bookingRoutes = require('./routes/booking_routes/booking')
 const fs = require('fs');
+const logRequest = require('./middlewares/logRequest')
 
 // const formData =require("express-form-data");
 var app = express();
@@ -16,6 +17,7 @@ require('./db/db');
 
 app.use(logger('dev'));
 app.use(express.json());
+app.use(logRequest);
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));

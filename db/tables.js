@@ -240,6 +240,19 @@ CREATE TABLE IF NOT EXISTS bookproduct (
     isSelected BOOLEAN NOT NULL DEFAULT false
 )
   `
+  const request_logs = `
+  CREATE TABLE  IF NOT EXISTS  request_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    userId INT,
+    req_method VARCHAR(10),
+    req_url VARCHAR(255),
+    req_body TEXT,
+    req_IPAddress VARCHAR(50),
+    res_statusCode INT,
+    res_body TEXT,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+`
 
   module.exports = {
     announcementsTable,
@@ -261,5 +274,6 @@ CREATE TABLE IF NOT EXISTS bookproduct (
     userRoleRelationTable,
     userBookingRelationTable,
     userMasterTable,
-    bookingCategory
+    bookingCategory,
+    request_logs
 };

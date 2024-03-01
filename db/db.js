@@ -72,6 +72,7 @@ async function createTables() {
     await connection.execute(tables.slotProductRelationTable);
 
     await connection.execute(tables.bookingCategory)
+    await connection.execute(tables.request_logs)
 
 
 

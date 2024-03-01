@@ -181,7 +181,7 @@ const BookingController = {
 
             return res.status(200).json({ Status: true, msg: `Booking with Id ${bookingId} cancelled successfully` });
         } catch (err) {
-            return res.status(400).json({ Status: false, msg: `Error cancelling the Booking`, err: err.message });
+            return res.status(400).json({ Status: false, msg: `Error cancelling the Booking`, error: err.message });
         }
     }
 }

@@ -24,7 +24,9 @@ const loginController = {
               .status(401)
               .json({ msg: "Invalid Password", Status: false });
           }
-          
+          // password = await bcrypt.hash(password, 10);
+          delete req.body.password
+    
           //find role of the user  and add it to the token
           let roleData = await Role.findRoleofUser(result.userId);
           

@@ -23,7 +23,7 @@ const userController = {
         .json({ msg: "All necessary fields are required", status: false });
       }
       const { email, password, firstName, lastName, phoneNumber} = req.body;
-      
+      delete req.body.password
       
       // validate  the incoming request, registration_validation in middleware catches errors and then we respond the error here
       const errors = validationResult(req);
@@ -48,6 +48,7 @@ const userController = {
 
       //register the user in db
       const result = await newUser.register();
+      
 
         if(!result){
           return res.status(500).send('Error creating account');
@@ -82,6 +83,7 @@ const userController = {
 
       //admin will send the id of the role that  he/she wants to assign to the user (register_as_role)
       let { email, password, firstName, lastName, phoneNumber, register_as_role} = req.body;
+      delete req.body.password
 
       //check register_as_role is int or not
       if (isNaN(parseInt(register_as_role))) {
@@ -118,6 +120,8 @@ const userController = {
 
       //register the user in the database
       const result = await newUser.register()
+      
+      
 
       //insert the user and role in userrole_relation table
       const r = await newUser.insertRole(register_as_role, result.insertId)
@@ -146,7 +150,7 @@ const userController = {
         .json({ msg: "All necessary fields are required", status: false });
       }
       const { oldPassword, password} = req.body;
-      
+      delete req.body.password
       // the input fields are oldPassword and password(this is the new password)
       // the password will get validated in register_validation middleware
       const errors = validationResult(req);
