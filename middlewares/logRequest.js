@@ -26,7 +26,7 @@ function logRequest(req, res, next) {
         logEntry.body=JSON.stringify(req.body);
         logEntry.userId  = req.user ? req.user.userId :  null;
         responseData = JSON.parse(responseData);
-        console.log(responseData);
+        // console.log(responseData);
         const logResponse={
             msg:responseData.msg || null,
             Status:responseData.Status || null,

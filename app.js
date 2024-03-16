@@ -17,16 +17,25 @@ require('./db/db');
 
 app.use(logger('dev'));
 app.use(express.json());
-app.use(logRequest);
+// app.use(logRequest);  //commented this because of /image route giving error because of response
+
+// const log = (req, res, next) => {
+//   console.log("Request Body:", req.body);
+//   next();
+// }
+
 
 app.use(express.urlencoded({ extended: true }));
+// app.use(log);
 app.use(express.static(path.join(__dirname, 'public')));
-// app.use('/images', express.static(path.join(__dirname, 'images')));
+// console.log(path.join(__dirname, 'public', 'images','product'));
+app.use('/images/', express.static(path.join(__dirname, 'public', 'images','product')));
 app.use('/', loginRoute)
 app.use('/user', userRoutes)
 app.use('/admin', adminRoutes)
 app.use('/product',productRouter);
 app.use('/booking' , bookingRoutes)
+
 
 // console.log(body);
 // catch 404 and forward to error handler

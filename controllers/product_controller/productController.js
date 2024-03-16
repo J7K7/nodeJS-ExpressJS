@@ -187,6 +187,7 @@ const ProductController = {
           const {
             productId,
             productName,
+            productDescription,
             advanceBookingDuration,
             active_fromDate,
             active_toDate,
@@ -194,6 +195,7 @@ const ProductController = {
           productsData[productId] = new ProductAllDetails(
             productId,
             productName,
+            productDescription,
             advanceBookingDuration,
             active_fromDate,
             active_toDate

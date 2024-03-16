@@ -20,7 +20,7 @@ const userController = {
         console.log(!req.body.phoneNumber);
         return res
         .status(400)
-        .json({ msg: "All necessary fields are required", status: false });
+        .json({ msg: "All necessary fields are required", Status: false });
       }
       const { email, password, firstName, lastName, phoneNumber} = req.body;
       delete req.body.password
@@ -51,7 +51,7 @@ const userController = {
       
 
         if(!result){
-          return res.status(500).send('Error creating account');
+          return res.status(500).send({ msg: 'Error creating account', Status: false });
         }
 
       // insert role of user  into the database table userrole_relation
@@ -67,7 +67,7 @@ const userController = {
     } catch (error) {
       return res
         .status(500)
-        .json({ msg: `error while registration : ${error}`, status: false });
+        .json({ msg: `error while registration : ${error}`, Status: false });
     }
   },
 
@@ -78,22 +78,22 @@ const userController = {
       if (!req.body.email || !req.body.password || !req.body.firstName || !req.body.lastName || !req.body.phoneNumber || !req.body.register_as_role){
         return res
         .status(400)
-        .json({ msg: "All necessary fields are required", status: false });
+        .json({ msg: "All necessary fields are required", Status: false });
       }
 
       //admin will send the id of the role that  he/she wants to assign to the user (register_as_role)
       let { email, password, firstName, lastName, phoneNumber, register_as_role} = req.body;
-      delete req.body.password
+      delete req.body.password     
 
       //check register_as_role is int or not
       if (isNaN(parseInt(register_as_role))) {
-        return res.status(400).json({msg:"Invalid Role ID"});
+        return res.status(400).json({msg:"Invalid Role ID" , Status: false});
       }
       register_as_role = parseInt(register_as_role);
 
       const isExist = await Role.roleExistsById(register_as_role)
       if(!isExist){
-         return res.status(400).json({msg:`The provided roleId does not exists`})  
+         return res.status(400).json({msg:`The provided roleId does not exists` ,  Status: false})  
        }
 
       

@@ -1,9 +1,10 @@
 
 
 class ProductAllDetails {
-    constructor(productId, productName, advanceBookingDuration, active_fromDate, active_toDate) {
+    constructor(productId, productName,productDescription, advanceBookingDuration, active_fromDate, active_toDate) {
       this.productId = productId;
       this.productName = productName;
+      this.productDescription = productDescription;
       this.advanceBookingDuration = advanceBookingDuration;
       this.active_fromDate = active_fromDate;
       this.active_toDate = active_toDate;

@@ -41,7 +41,7 @@ const upload = multer({
   fileFilter: (req, file, cb) => {
     // This will check the mimetype of the uploaded file against our list of allowed types and return an error
     // console.log(req)
-    console.log("filefilter");
+    // console.log("filefilter");
     const expectedFieldNames = ["productImages"];
     const allowedFileTypes = ["image/jpeg", "image/png", "image/jpg"];
     // console.log(file);

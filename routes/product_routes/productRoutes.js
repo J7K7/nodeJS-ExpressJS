@@ -70,7 +70,7 @@ router.post('/addImage',auth, productImagesUpload,ProductController.addProductIm
 
 router.get('/getProductDetails/:id',auth,ProductController.getProductDetailsById );//this
 
-router.get('/getAllProductDetails',auth, ProductController.getAllProductsWithImagesandFeature );
+router.get('/getAllProductDetails', auth,  ProductController.getAllProductsWithImagesandFeature );
 
 router.put('/updateSlotById/:id',auth, ProductController.updateSlotById);
 
