@@ -61,13 +61,13 @@ const userController = {
       } else {
         return res
           .status(201)
-          .json({ msg: "user registration successful", Status: true });
+          .json({ msg: "User registration successful", Status: true });
       }
 
     } catch (error) {
       return res
         .status(500)
-        .json({ msg: `error while registration : ${error}`, Status: false });
+        .json({ msg: `Error while Registration : ${error}`, Status: false });
     }
   },
 
@@ -137,7 +137,7 @@ const userController = {
       console.log(error);
       return res
         .status(500)
-        .json({ msg: `error while registration : ${error}`, status: false });
+        .json({ msg: `ERROR while Registration - ${error}`, Status: false });
     }
   },
 

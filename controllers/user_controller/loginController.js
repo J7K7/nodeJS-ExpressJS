@@ -13,7 +13,7 @@ const loginController = {
           const result = await User.findUserByEmail(email); 
           if (!result) {
             return res
-              .status(401)
+              .status(400)
               .json({ msg: "Invalid Email ", Status: false });
           }
 
@@ -21,7 +21,7 @@ const loginController = {
           const validPassword = await compare(password, result.password);
           if (!validPassword) {
             return res
-              .status(401)
+              .status(400)
               .json({ msg: "Invalid Password", Status: false });
           }
           // password = await bcrypt.hash(password, 10);

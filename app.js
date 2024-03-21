@@ -9,6 +9,7 @@ var productRouter=require("./routes/product_routes/productRoutes")
 const bookingRoutes = require('./routes/booking_routes/booking')
 const fs = require('fs');
 const logRequest = require('./middlewares/logRequest')
+const cors = require('cors');
 
 // const formData =require("express-form-data");
 var app = express();
@@ -16,6 +17,7 @@ var app = express();
 require('./db/db');
 
 app.use(logger('dev'));
+app.use(cors());
 app.use(express.json());
 // app.use(logRequest);  //commented this because of /image route giving error because of response
 

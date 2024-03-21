@@ -19,7 +19,7 @@ class User {
       let queryParam = [this.email];
       let resp = await executeQuery(query, queryParam);
       if (resp[0].cnt > 0) {
-        throw new Error(`The user already exists.`);
+        throw (`USER ALREADY EXISTS`);
       }
 
       //check if the phoneNumber already exists
@@ -28,7 +28,7 @@ class User {
       queryParam = [this.phoneNumber];
       resp = await executeQuery(query, queryParam);
       if (resp[0].cnt > 0) {
-        throw new Error(`This phone number is already registered.`);
+        throw (`This phone number is already registered.`);
       }
 
       //hash the password and insert  into db
@@ -45,7 +45,7 @@ class User {
       ];
       const result = await executeQuery(query, queryParam);
       if (!result || result.affectedRows < 0) {
-        throw new Error(`Unable to add user ${this.email}`);
+        throw (`Unable to add user ${this.email}`);
       }
       return result;
 
@@ -64,7 +64,7 @@ class User {
       let params = [insertId, roleData.roleId];
       const res = await executeQuery(query, params);
       if (!res || !res.affectedRows) {
-        throw new Error("failed to assign role");
+        throw ("failed to assign role");
       }
       return res;
     } catch (error) {
@@ -89,7 +89,7 @@ class User {
       let queryParam = [register_as_role]; 
       const result = await executeQuery(query, queryParam);
       if (result[0].count < 1) {
-        throw new Error(`No such role found `);
+        throw (`No such role found `);
       }
 
       //insert the biding  between user and role
@@ -97,7 +97,7 @@ class User {
       query = `insert into userrole_relation (userId, roleId) values(?,?)`;
       queryParam = [userId, register_as_role];
       let r = await executeQuery(query, queryParam);
-      if (!r || r.length < 0) throw new Error("Failed to assign user a role");
+      if (!r || r.length < 0) throw ("Failed to assign user a role");
       return r;
 
     } catch (error) {
@@ -114,7 +114,7 @@ class User {
 
   static findUserByEmail = async (email) => {
     if (!email) {
-      throw new Error("Email is required");
+      throw ("Email is required");
     }
 
     const query =
@@ -127,7 +127,7 @@ class User {
       // console.log(result);
       return result.length > 0 ? result[0] : null;
     } catch (err) {
-      throw new Error("Error while fetching user by email");
+      throw ("Error while fetching user by email");
     }
   };
 
@@ -191,7 +191,7 @@ class User {
       let res = await executeQuery(query,params);
       // console.log(res);
       if (!res || !res.affectedRows > 0 ) {
-        throw new Error(`Unable to Update Password`);
+        throw (`Unable to Update Password`);
       }
       return res;
     } catch (error) {
@@ -208,7 +208,7 @@ class User {
       let queryParam = [userId];
       const res = await executeQuery(query, queryParam);
       if (!res.affectedRows ) {
-        throw new Error (`unable to delete`);
+        throw  (`unable to delete`);
       }
 
       //delete role mapping for this userId
@@ -216,7 +216,7 @@ class User {
       queryParam = [userId];
       const result = await executeQuery(query, queryParam);
       if (!result.affectedRows ){
-         throw new Error ('User Role Mapping not deleted');
+         throw ('User Role Mapping not deleted');
        }
       return result;
 
@@ -232,7 +232,7 @@ class User {
       let query = "SELECT um.email, um.firstName, um.lastName, um.phoneNumber, um.profilePic, um.timestamp, r.roleId, r.roleName FROM usermaster um JOIN userrole_relation ur ON um.userId = ur.userId JOIN role r ON ur.roleId = r.roleId WHERE um.isDeleted = 0 AND r.isDeleted = 0; "
       let result = await executeQuery(query);
       if(!result){
-        throw new Error("No data found")
+        throw ("No data found")
       }
       return result;
     } catch (error) {
