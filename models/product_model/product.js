@@ -1,5 +1,5 @@
 const { combineDateTime } = require("../../common/dateFormat");
-const {executeQuery} = require("../../db/connection");
+const { executeQuery } = require("../../db/connection");
 const { slotMasterTable } = require("../../db/tables");
 const Feature = require("./feature");
 const ProductImage = require("./image");
@@ -23,7 +23,7 @@ class Product {
     this.active_fromDate = active_fromDate;
     this.active_toDate = active_toDate;
     this.productCapacity = productCapacity;
-    this.slotData=slotData;
+    this.slotData = slotData;
   }
 
   // Function to Save the product into the productMaster table.
@@ -76,8 +76,8 @@ class Product {
   // Get All ProductDetails With Images And Feature not deleted products
   static async getAllProductDetailsWithImagesAndFeatures() {
     try {
-        // SQL query to fetch all product details with images and features
-        const query = `
+      // SQL query to fetch all product details with images and features
+      const query = `
         SELECT
         pm.productId,
         pm.productName,
@@ -105,15 +105,100 @@ class Product {
           pm.isDeleted = 0 
         `;
 
-        // Execute the query
-        const result = await executeQuery(query);
+      // Execute the query
+      const result = await executeQuery(query);
 
-        // Return the result rows
-        return result;
+      // Return the result rows
+      return result;
     } catch (error) {
-        throw new Error(`Error fetching all product details: ${error.message}`);
+      throw new Error(`Error fetching all product details: ${error.message}`);
     }
-}
+  }
+  // This is the searchProducts Byu passing query Params It perform the search Operation
+
+  static async searchProducts(query) {
+    try {
+      const searchQuery = query.q ; // Default to empty string if not provided
+      const slotDate = query.slotDate;
+      const checkInDate=query.checkInDate;
+      const checkOutDate=query.checkOutDate;
+
+  
+      // Build the base query
+      let sql = `
+        SELECT p.productId,
+        p.productName,
+        p.productDescription,
+        p.advanceBookingDuration,
+        p.active_fromDate,
+        p.active_toDate,
+        p.productCapacity,
+        i.imageId,
+        i.imagePath,
+        f.featureId,
+        f.featureName,
+        f.featureDescription,
+        sm.slotId,
+        sm.slotPrice
+        FROM productmaster as p
+        LEFT JOIN
+            productImage_relation AS pir ON p.productId = pir.productId
+        LEFT JOIN
+            productimages AS i ON pir.imageId = i.imageId
+        LEFT JOIN
+            productfeature_relation AS pfr ON p.productId = pfr.productId
+        LEFT JOIN
+            product_features AS f ON pfr.featureId = f.featureId
+        LEFT JOIN slotproduct_relation spr ON p.productId = spr.productId
+        LEFT JOIN slotmaster sm ON spr.slotId = sm.slotId
+        WHERE p.isDeleted=0 and p.isActive=1
+      `;
+  
+      // Add WHERE clauses for search query (if provided) and active slots (if date provided)
+      const values = []; // Array to store query parameter values
+      
+      if (searchQuery) {
+        console.log("search",searchQuery)
+        sql += ` AND (p.productName LIKE ? OR p.productDescription LIKE ?)`;
+        const searchPattern = `%${searchQuery}%`; // Add wildcard '%' around search query
+        values.push(searchPattern, searchPattern); // Push parameter values to array
+      }
+  
+      if (slotDate) {
+        sql += `AND sm.slotDate = ? AND sm.slotActive = 1`;
+        values.push(slotDate); // Push slotDate parameter value to array
+      }
+      else if(checkInDate && checkOutDate){
+        
+        sql += 'AND '; // Combine search and date filters with AND
+        
+        sql += `
+          (SELECT COUNT(*) 
+          FROM slotmaster AS sm2
+          INNER JOIN slotproduct_relation AS spr2 ON sm2.slotId = spr2.slotId
+          WHERE spr2.productId = p.productId
+          AND sm2.slotDate >= ?
+          AND sm2.slotDate <= ?
+          AND sm2.slotActive = 1
+          ) = DATEDIFF(?, ?) + 1
+        `;
+        values.push(checkInDate,checkOutDate,checkOutDate,checkInDate);
+      }
+  
+      // Execute the query
+      // console.log(sql);
+      // console.log(values);
+      const result = await executeQuery(sql, values); // Pass the SQL query and parameter values to executeQuery
+      // Return the result rows
+      // console.log(result.length);
+      // console.log(result);
+      return result;
+    } catch (error) {
+      console.log(error);
+      throw new Error(`Error In Searching product: ${error.message}`);
+    }
+  }
+  
 
   //Get Product Details By Id
   static async getProductDetailsById(productId) {
@@ -146,10 +231,10 @@ class Product {
       WHERE
           pm.productId = ? 
       `;
-      const result= await executeQuery(productDetailsQuery, [productId]);
+      const result = await executeQuery(productDetailsQuery, [productId]);
       // console.log(result,productId)
-      if(result.length === 0){
-        throw new Error("No Product Found with this productId")
+      if (result.length === 0) {
+        throw new Error("No Product Found with this productId");
       }
       return result;
     } catch (error) {
@@ -192,8 +277,8 @@ class Product {
       throw error; // Throw the error to propagate it up the call stack
     }
   }
-  // check Product existence By productName 
-  static async findProductCountByName(productName){
+  // check Product existence By productName
+  static async findProductCountByName(productName) {
     try {
       // SQL query to count the number of products with the given name
       const selectQuery = `
@@ -210,13 +295,13 @@ class Product {
 
       // Return the product count
       return productCount;
-  } catch (error) {
+    } catch (error) {
       // Handle any errors that occur during the query execution
       console.error("Error finding product count by name:", error.message);
       throw error; // Throw the error to propagate it up the call stack
+    }
   }
-  }
-  // Update Product Status like activate , deactivate 
+  // Update Product Status like activate , deactivate
   static async updateProductStatusById(productId, status) {
     try {
       // Construct SQL query to update slot status by ID
@@ -241,7 +326,13 @@ class Product {
   }
   // Update Product's Info like productName , description;
   // admin can change the activeToDate untill the current Date + adavnceBookingDuration
-  static async updateProductDetailsByProductId (productId , productName, productDescription, active_toDate, productCapacity )  {
+  static async updateProductDetailsByProductId(
+    productId,
+    productName,
+    productDescription,
+    active_toDate,
+    productCapacity
+  ) {
     try {
       const selectQuery = `
           SELECT COUNT(*) AS productCount
@@ -250,27 +341,37 @@ class Product {
       `;
 
       // Execute the query and await the result
-      const cntResult = await executeQuery(selectQuery, [productName,productId]);
+      const cntResult = await executeQuery(selectQuery, [
+        productName,
+        productId,
+      ]);
 
       // Extract the product count from the result
       const productCount = cntResult[0].productCount;
       console.log(cntResult);
-      if (productCount > 0){
-         throw new Error('This product name already exists');
-       }
-      let query = "update productmaster set productName=?, productDescription=?, active_toDate=?, productCapacity=? where productId = ?"
-      let queryparam = [ productName, productDescription, active_toDate, productCapacity, productId];
+      if (productCount > 0) {
+        throw new Error("This product name already exists");
+      }
+      let query =
+        "update productmaster set productName=?, productDescription=?, active_toDate=?, productCapacity=? where productId = ?";
+      let queryparam = [
+        productName,
+        productDescription,
+        active_toDate,
+        productCapacity,
+        productId,
+      ];
       const result = await executeQuery(query, queryparam);
       if (!result || !result.affectedRows > 0) {
         throw new Error("Updation of Product Information Failed");
       }
-      return result; 
+      return result;
     } catch (error) {
       console.log("Error in Updating Product Info :", error);
       throw error;
     }
   }
-  
+
   // Function to Linking the featureData with the Product class
   static async linkProductWithFeatures(productId, featureData) {
     try {
@@ -403,26 +504,25 @@ class Product {
   // Function To linking SlotIds with Particular ProductId;
   static async linkSlotsWithProduct(productId, slotIds) {
     try {
-        // Create an array of link query values by mapping each slotId to an array containing both the productId and the slotId.
-        const linkValues = slotIds.flatMap((slotId) => [productId, slotId]);
+      // Create an array of link query values by mapping each slotId to an array containing both the productId and the slotId.
+      const linkValues = slotIds.flatMap((slotId) => [productId, slotId]);
 
-        // Generate a SQL query for bulk insertion into the slotproduct_relation table.
-        const bulkInsertQuery = `
+      // Generate a SQL query for bulk insertion into the slotproduct_relation table.
+      const bulkInsertQuery = `
             INSERT INTO slotproduct_relation (productId, slotId)
             VALUES ${Array(slotIds.length).fill("(?, ?)").join(", ")}
         `;
 
-        // Execute the bulk insert query with the linkValues array, which contains the flattened pairs of (productId, slotId).
-        await executeQuery(bulkInsertQuery, linkValues);
+      // Execute the bulk insert query with the linkValues array, which contains the flattened pairs of (productId, slotId).
+      await executeQuery(bulkInsertQuery, linkValues);
 
-        // Return success message or handle further logic if needed
-        return "Slots linked with product successfully.";
+      // Return success message or handle further logic if needed
+      return "Slots linked with product successfully.";
     } catch (error) {
-        // If an error occurs during the linking process, throw an error
-        throw new Error(`Error linking slots with product: ${error.message}`);
+      // If an error occurs during the linking process, throw an error
+      throw new Error(`Error linking slots with product: ${error.message}`);
     }
-}
-
+  }
 
   // Function To add Intial slots into slot master for advance booking duration
   /* 
@@ -464,12 +564,11 @@ class Product {
       // Create an array to store slotIds
       const slotIds = [];
 
-
       const currentDate = moment(active_fromDate);
       // Need to add slots for active_fromDate to active_fromDate+duration-1(beacause we are adding slot for today also)
       // let suppose stating date is 22 and advance booking duration is 5 days than slots will we added for 22+5-1 =26 till 26th date  .(22,23,24,25,26);
       const toDate = moment(active_fromDate).add(
-        advanceBookingDuration-1,
+        advanceBookingDuration - 1,
         "days"
       );
       // Iterate over the date range and create slots for each day according to bookingCategory
@@ -477,11 +576,15 @@ class Product {
         currentDate.isSameOrBefore(toDate, "day") &&
         currentDate.isSameOrBefore(active_toDate, "day")
       ) {
-        // Adding slots into the slotmaster table 
-        const singleDaySlotIds=await Slot.addSingleDateSlot(slotData,currentDate,bookingCategoryId);
+        // Adding slots into the slotmaster table
+        const singleDaySlotIds = await Slot.addSingleDateSlot(
+          slotData,
+          currentDate,
+          bookingCategoryId
+        );
         slotIds.push(...singleDaySlotIds);
         // console.log(slotIds)
-        // Move to the next day        
+        // Move to the next day
         currentDate.add(1, "day");
       }
       if (slotIds.length == 0) {
@@ -489,7 +592,7 @@ class Product {
           `Error in adding slot Invalid slotData or Empty slotData`
         );
       }
-      const linkingResult=await this.linkSlotsWithProduct(productId,slotIds);
+      const linkingResult = await this.linkSlotsWithProduct(productId, slotIds);
 
       return true; // Successfully linked slots with the product
     } catch (error) {
@@ -498,7 +601,7 @@ class Product {
     }
   }
 
-  static async deleteProductById(productId){
+  static async deleteProductById(productId) {
     try {
       // Construct the SQL query to update the product's isDeleted flag
       const query = `
@@ -515,7 +618,7 @@ class Product {
         return true;
       } else {
         // If no rows were affected, the product with the provided ID was not found
-        throw new Error('Product not found');
+        throw new Error("Product not found");
       }
     } catch (error) {
       // If an error occurs during the database operation, throw an error with details

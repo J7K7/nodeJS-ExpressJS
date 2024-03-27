@@ -27,6 +27,7 @@ const auth = async (req, res, next) => {
       //token is already signed with roleId
 
       let currentUrl = req.url; // this gives us the url of the requested resource.
+      // console.log("current url",currentUrl)
       // console.log("this is current url", currentUrl);
       // remove / from starting of the url
       // currentUrl = currentUrl.slice(1);
@@ -41,7 +42,12 @@ const auth = async (req, res, next) => {
 
       // Extract the desired segment based on the URL structure
       let segment=urlSegments[0];
+      let urlSegmentsSplit = segment.split("?");
+      let urlSegment2 = urlSegmentsSplit[0]
+      // urlSegments.shift();
 
+      // console.log("segment",segment);
+      // console.log("urlSegment2",urlSegment2);
     //   if (urlSegments.length > 1) {
     //     // Case: /getProducts/12
     //     segment = urlSegments[0];
@@ -59,7 +65,7 @@ const auth = async (req, res, next) => {
       const hasPermission = await checkPermission(
         userData.userId,
         userData.roleId,
-        segment
+        urlSegment2
       );
       if (!hasPermission) {
         return res

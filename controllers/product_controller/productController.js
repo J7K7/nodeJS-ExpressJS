@@ -1,4 +1,4 @@
-const {executeQuery} = require("../../db/connection");
+const { executeQuery } = require("../../db/connection");
 const Feature = require("../../models/product_model/feature");
 const ProductImage = require("../../models/product_model/image");
 const Product = require("../../models/product_model/product");
@@ -6,21 +6,24 @@ const moment = require("moment");
 const Slot = require("../../models/product_model/slot");
 const path = require("path");
 const fs = require("fs");
-const { combineDateTime } = require("../../common/dateFormat");
+const {
+  combineDateTime,
+  isValidSqlDateFormat,
+} = require("../../common/dateFormat");
 const {
   productDetailsValidation,
   slotValidation,
   featureValidation,
 } = require("../../common/validations");
-const { log } = require("console");
+const { log, Console } = require("console");
 const { all } = require("../../routes/product_routes/productRoutes");
 const ProductAllDetails = require("../../models/product_model/productAllDetails");
 const BookingsMaster = require("../../models/booking_model/bookingsMaster");
+const { check } = require("express-validator");
 const maxImagesPerProduct = process.env.MAX_IMAGES_PER_PRODUCT;
 
 const ProductController = {
   addProduct: async (req, res) => {
-    
     try {
       const {
         productName,
@@ -79,15 +82,16 @@ const ProductController = {
           .status(400)
           .json({ Status: false, msg: featureValidationResult.message });
       }
-      //Validating that Product with same name is exist or not  in database 
-      const productCnt=await Product.findProductCountByName(productName);
-      if(productCnt>0){
+      //Validating that Product with same name is exist or not  in database
+      const productCnt = await Product.findProductCountByName(productName);
+      if (productCnt > 0) {
         // console.log(req.files)
         //Fucntion For cleaning Up the local Storage Beacause this request is bad request so we are removing all files from local storage
         await cleanupUploadedImages(req.files);
-        return res
-          .status(409)
-          .json({ Status: false, msg:`Product With This ${productName} name already exists.` });
+        return res.status(409).json({
+          Status: false,
+          msg: `Product With This ${productName} name already exists.`,
+        });
       }
 
       console.log("Product Successfully verified");
@@ -166,7 +170,6 @@ const ProductController = {
 
       // If it's an unexpected error, send a generic error response
       res.status(500).json({
-        
         Status: false,
         msg: "Error in Adding Product : " + error.message,
       });
@@ -174,6 +177,7 @@ const ProductController = {
   },
   getAllProductsWithImagesandFeature: async (req, res) => {
     try {
+      // if()
       // Query your database to fetch all product details
       const allProductDetails =
         await Product.getAllProductDetailsWithImagesAndFeatures();
@@ -183,7 +187,7 @@ const ProductController = {
       const productsData = {};
       allProductDetails.forEach((row) => {
         const productId = row.productId;
-        if (!productsData[productId]) {
+        if (productId && !productsData[productId]) {
           const {
             productId,
             productName,
@@ -197,8 +201,8 @@ const ProductController = {
             productName,
             productDescription,
             advanceBookingDuration,
-            active_fromDate,
-            active_toDate
+            moment(active_fromDate).format("YYYY-MM-DD"),
+            moment(active_toDate).format("YYYY-MM-DD")
           );
         }
         if (row.imageId && !productsData[productId].hasImage(row.imageId)) {
@@ -223,7 +227,7 @@ const ProductController = {
       res.status(200).json({ Status: true, productsData: productsArray });
     } catch (error) {
       console.error("Error fetching product details:", error);
-      res.status(500).json({
+      return res.status(500).json({
         Status: false,
         msg: "Internal server error: " + error.message,
       });
@@ -262,8 +266,8 @@ const ProductController = {
         productId,
         productName,
         advanceBookingDuration,
-        active_fromDate,
-        active_toDate
+        moment(active_fromDate).format("YYYY-MM-DD"),
+        moment(active_toDate).format("YYYY-MM-DD")
       );
 
       productDetails.forEach((row) => {
@@ -287,13 +291,123 @@ const ProductController = {
       res.status(200).json({ Status: true, productData });
     } catch (error) {
       console.error("Error fetching product details:", error);
-      res.status(500).json({
+      return res.status(500).json({
         Status: false,
         msg: "Internal server error : " + error.message,
       });
     }
   },
-  updateProductStatusById:async (req,res)=>{
+  searchProducts: async (req, res) => {
+    try {
+      const searchQuery = req.query.q; // Default to empty string if not provided
+      const slotDate = req.query.slotDate;
+      const checkInDate = req.query.checkInDate;
+      const checkOutDate = req.query.checkOutDate;
+      console.log(req.query);
+      // Query your database to fetch all product details
+      if (slotDate) {
+        if (slotDate && !isValidSqlDateFormat(slotDate)) {
+          return res.status(400).json({
+            Status: false,
+            msg: "Invalid date format. Please use YYYY-MM-DD or enter a valid date.",
+          });
+        }
+        const slotDate1 = moment(slotDate);
+        const currentDate = moment().startOf("day");
+        if (!slotDate1.isSameOrAfter(currentDate)) {
+          return res.status(400).json({
+            Status: false,
+            msg:
+              "SloltDate must be greater than or equal to the current date.",
+          });
+        }
+      }
+      if (checkInDate || checkOutDate) {
+        if (!(checkInDate && checkOutDate)) {
+          return res.status(400).json({
+            Status: false,
+            msg: "Please Provide the Check In Date and CheckOut Date both",
+          });
+        }
+        // Validation Like checkOut> checkIn
+        // CheckIn >= currentDate
+        const fromDate = moment(checkInDate);
+        const toDate = moment(checkOutDate);
+
+        // Validate that toDate is greater than or equal to fromDate
+        if (!toDate.isSameOrAfter(fromDate)) {
+          return res.status(400).json ({
+            Status: false,
+            msg:
+              "CheckOut Date must be greater than or equal to CheckIn Date",
+          });
+        }
+
+        // Validate fromDate is greater than or equal to the current date
+        const currentDate = moment().startOf("day");
+        if (!fromDate.isSameOrAfter(currentDate)) {
+          return res.status(400).json({
+            isValid: false,
+            message:
+              "CheckIn Date must be greater than or equal to the current date.",
+          });
+        }
+      }
+      console.log("Search query is ", req.query);
+      const allProductDetails = await Product.searchProducts(req.query);
+
+      // Organize the retrieved data into the desired format
+      // console.log(allProductDetails)
+      const productsData = {};
+      allProductDetails.forEach((row) => {
+        const productId = row.productId;
+        if (productId && !productsData[productId]) {
+          const {
+            productId,
+            productName,
+            productDescription,
+            advanceBookingDuration,
+            active_fromDate,
+            active_toDate,
+          } = row;
+          productsData[productId] = new ProductAllDetails(
+            productId,
+            productName,
+            productDescription,
+            advanceBookingDuration,
+            moment(active_fromDate).format("YYYY-MM-DD"),
+            moment(active_toDate).format("YYYY-MM-DD")
+          );
+        }
+        if (row.imageId && !productsData[productId].hasImage(row.imageId)) {
+          productsData[productId].addImage(row.imageId, row.imagePath);
+        }
+        if (
+          row.featureId &&
+          !productsData[productId].hasFeature(row.featureId)
+        ) {
+          productsData[productId].addFeature(
+            row.featureId,
+            row.featureName,
+            row.featureDescription
+          );
+        }
+      });
+
+      // Convert the product objects to an array
+      const productsArray = Object.values(productsData);
+
+      // Return the result
+      res.status(200).json({ Status: true, productsData: productsArray });
+    } catch (error) {
+      console.error("Error In fetching product details:", error);
+      return res.status(500).json({
+        Status: false,
+        msg: "Internal server error: " + error.message,
+      });
+    }
+  },
+  updateProductStatusById: async (req, res) => {
     // For updating the status of the  product by id.
     const productId = req.params.id;
     const { status } = req.body; // status: 1 for activate, 0 for deactivate
@@ -321,11 +435,16 @@ const ProductController = {
       // Send success response
       return res.status(200).json({
         Status: true,
-        msg: `Product ${status==1 ? "activated" : "deactivated"} successfully.`,
+        msg: `Product ${
+          status == 1 ? "activated" : "deactivated"
+        } successfully.`,
       });
-    }catch (error) {
+    } catch (error) {
       // Handle errors
-      if (error.message.includes("error is not defined") || error.message.includes("Product not found")) {
+      if (
+        error.message.includes("error is not defined") ||
+        error.message.includes("Product not found")
+      ) {
         console.error("Error in updating Invalid Product Id", error);
         return res
           .status(400)
@@ -338,7 +457,7 @@ const ProductController = {
       });
     }
   },
-  deleteProductById: async (req,res)=>{
+  deleteProductById: async (req, res) => {
     // Extract the Product ID from the request parameters
     const productId = req.params.id;
 
@@ -356,8 +475,10 @@ const ProductController = {
       }
 
       // First we check the if any current confirm booking for this productId is there or not?
-      const bookingIds = await BookingsMaster.findAllConfirmBookingsByProductId(productId);
-      
+      const bookingIds = await BookingsMaster.findAllConfirmBookingsByProductId(
+        productId
+      );
+
       // If yes then send the bookingId's and Message that You can not delete this  product because it has been assigned to some users.
       // Check if the product has any associated bookings
       if (bookingIds && bookingIds.length > 0) {
@@ -365,7 +486,7 @@ const ProductController = {
         return res.status(409).json({
           Status: false,
           msg: `Cannot delete the product because it has bookings.`,
-          bookingIds: bookingIds
+          bookingIds: bookingIds,
         });
       }
 
@@ -376,7 +497,10 @@ const ProductController = {
         .json({ Status: true, msg: "product deleted successfully." });
     } catch (error) {
       // Handle errors
-      if (error.message.includes("error is not defined") || error.message.includes("Product not found")) {
+      if (
+        error.message.includes("error is not defined") ||
+        error.message.includes("Product not found")
+      ) {
         console.error("Error in Deleting Invalid Product Id", error);
         return res
           .status(400)
@@ -436,7 +560,7 @@ const ProductController = {
     try {
       const { featureData, productId } = req.body;
       // console.log(req.body);
-      const parsedFeatureData=JSON.parse(featureData)
+      const parsedFeatureData = JSON.parse(featureData);
       // Validate input data
       const featureValidationResult = featureValidation(parsedFeatureData);
       if (!featureValidationResult.isValid) {
@@ -469,7 +593,10 @@ const ProductController = {
         .status(201)
         .send({ Status: true, msg: "Features has been added successfully" });
     } catch (error) {
-      if (error.message.includes("error is not defined") || error.message.includes("Product not found")) {
+      if (
+        error.message.includes("error is not defined") ||
+        error.message.includes("Product not found")
+      ) {
         console.error(" Invalid Product Id", error);
         return res
           .status(400)
@@ -578,7 +705,9 @@ const ProductController = {
           // console.log(file);
           // fs.unlinkSync(file.path);
           //This can be also used;
-          fs.unlinkSync(path.join(__dirname, "../../public/images/product", file.filename));
+          fs.unlinkSync(
+            path.join(__dirname, "../../public/images/product", file.filename)
+          );
         }
         return res.status(403).json({
           Status: false,
@@ -604,7 +733,7 @@ const ProductController = {
       });
     }
   },
-  addSingleSlotByProductId : async (req, res) => {
+  addSingleSlotByProductId: async (req, res) => {
     //Adding new slot for particular product mostly applicable for bookingCategory 1 (slotBased)
     const {
       slotDate,
@@ -619,7 +748,7 @@ const ProductController = {
     try {
       // Check if required parameters are provided and apply slotValidations
       const slotData = {
-        date:slotDate,
+        date: slotDate,
         price: slotPrice,
         capacity: slotOriginalCapacity,
         fromTime: slotFromDateTime,
@@ -630,24 +759,32 @@ const ProductController = {
         [slotData],
         bookingCategoryId
       );
-      if (!slotValidationResult.isValid)  {
+      if (!slotValidationResult.isValid) {
         return res
           .status(400)
           .json({ Status: false, msg: slotValidationResult.message });
       }
-      if(!moment(slotDate, 'YYYY-MM-DD', true).isValid()){
-        return res .status(400).json({msg:"Invalid Slot date format please use YYYY/MM/DD", Status: false});
+      if (!moment(slotDate, "YYYY-MM-DD", true).isValid()) {
+        return res.status(400).json({
+          msg: "Invalid Slot date format please use YYYY/MM/DD",
+          Status: false,
+        });
       }
       // Validate the ProductId is Valid Or not ?
       const product = await Product.findProductById(productId);
-        // Call the addSingleSlotByProductId method from the Slot model
+      // Call the addSingleSlotByProductId method from the Slot model
       const newSlot = await Slot.addSingleSlotByProductId(productId, slotData);
 
-        // Send a success response
-      return res.status(201).json({ Status: true, msg: 'Slot added successfully', data: newSlot });
+      // Send a success response
+      return res
+        .status(201)
+        .json({ Status: true, msg: "Slot added successfully", data: newSlot });
     } catch (error) {
       // Handle errors
-      if (error.message.includes("error is not defined") || error.message.includes("Product not found")) {
+      if (
+        error.message.includes("error is not defined") ||
+        error.message.includes("Product not found")
+      ) {
         console.error(" Invalid Product Id", error);
         return res
           .status(400)
@@ -696,7 +833,6 @@ const ProductController = {
           msg: "Invalid slot ID. Please provide a positive integer.",
         });
       }
-      
 
       // Call the updateSlotById method from the Slot model
       const result = await Slot.updateSlotById(
@@ -706,7 +842,10 @@ const ProductController = {
       );
 
       // Send a success response
-      res.status(200).json({ Status: true, msg: "Slot updated successfully. Please note that the changes will only affect new bookings. Existing bookings remain unchanged." });
+      res.status(200).json({
+        Status: true,
+        msg: "Slot updated successfully. Please note that the changes will only affect new bookings. Existing bookings remain unchanged.",
+      });
     } catch (error) {
       // Handle errors
       if (
@@ -748,76 +887,125 @@ const ProductController = {
       // Send success response
       return res.status(200).json({
         Status: true,
-        msg: `Slot ${status==1 ? "activated" : "deactivated"} successfully. This Changes Applicable for upcoming Bookings this not reflect in current Bookings`,
+        msg: `Slot ${
+          status == 1 ? "activated" : "deactivated"
+        } successfully. This Changes Applicable for upcoming Bookings this not reflect in current Bookings`,
       });
     } catch (error) {
       // Handle errors
       return res.status(500).json({
         Status: false,
-        msg: `Failed to ${status==1 ? "activate" : "deactivate"} slot. : `+error.message ,
+        msg:
+          `Failed to ${status == 1 ? "activate" : "deactivate"} slot. : ` +
+          error.message,
       });
     }
   },
-  updateProductDetails : async (req, res) => {
+  updateProductDetails: async (req, res) => {
     try {
-        // console.log(req.params['productId']);
-        const {productName, productDescription, active_toDate, productCapacity, advanceBookingDuration } = req.body;
-        const productId = req.params.id;
-        // console.log(productId);
-        if (!productId || isNaN(parseInt(productId))) throw "Invalid Product ID";
-        if (!productCapacity || !advanceBookingDuration ){
-            return res.status(400).json({msg: "Missing fields!", Status : false});
-        }
-        if(isNaN(parseInt(productCapacity)) || isNaN(parseInt(advanceBookingDuration))){
-            return res.status (400).json({msg:"Fields must be numbers!" ,Status :false})
-        }
-        if(advanceBookingDuration <= 0){
-          return res.status (400).json({msg:"advanceBookingDuration can not be zero  or negative!" ,Status :false})
-        }
-        // Validate the incoming data
-        if ( !productName || !productDescription || !active_toDate || !productCapacity || !advanceBookingDuration ) {
-            return res.status(400).json({msg: "Please include all fields", Status:  false});
-        };
-        //validate active_toDate
-        if(!moment(active_toDate, 'YYYY-MM-DD', true).isValid()){
-            return res .status(400).json({msg:"Invalid active to date format please use YYYY/MM/DD", Status: false});
-        }
-        //validate active_toDate, it should be greater than current  date + advanceBookingDuration
-        if(!moment(active_toDate).isAfter(moment().add(advanceBookingDuration, 'days').format('YYYY-MM-DD'))){
-               return res.status(400).json({msg : `The Active To Date Should Be Greater Than Today's Date Plus ${advanceBookingDuration} Days`, Status : false});
-        }
-        const result = await Product.updateProductDetailsByProductId(productId , productName, productDescription, active_toDate, productCapacity )
-        if (!result.affectedRows > 0 ) {
-            return res.status(400).json({msg: "No product found with the provided id" ,Status:false})
-        }
-        return res.status(200).json({msg: "product updated successfully", Status: true})
+      // console.log(req.params['productId']);
+      const {
+        productName,
+        productDescription,
+        active_toDate,
+        productCapacity,
+        advanceBookingDuration,
+      } = req.body;
+      const productId = req.params.id;
+      // console.log(productId);
+      if (!productId || isNaN(parseInt(productId))) throw "Invalid Product ID";
+      if (!productCapacity || !advanceBookingDuration) {
+        return res.status(400).json({ msg: "Missing fields!", Status: false });
+      }
+      if (
+        isNaN(parseInt(productCapacity)) ||
+        isNaN(parseInt(advanceBookingDuration))
+      ) {
+        return res
+          .status(400)
+          .json({ msg: "Fields must be numbers!", Status: false });
+      }
+      if (advanceBookingDuration <= 0) {
+        return res.status(400).json({
+          msg: "advanceBookingDuration can not be zero  or negative!",
+          Status: false,
+        });
+      }
+      // Validate the incoming data
+      if (
+        !productName ||
+        !productDescription ||
+        !active_toDate ||
+        !productCapacity ||
+        !advanceBookingDuration
+      ) {
+        return res
+          .status(400)
+          .json({ msg: "Please include all fields", Status: false });
+      }
+      //validate active_toDate
+      if (!moment(active_toDate, "YYYY-MM-DD", true).isValid()) {
+        return res.status(400).json({
+          msg: "Invalid active to date format please use YYYY/MM/DD",
+          Status: false,
+        });
+      }
+      //validate active_toDate, it should be greater than current  date + advanceBookingDuration
+      if (
+        !moment(active_toDate).isAfter(
+          moment().add(advanceBookingDuration, "days").format("YYYY-MM-DD")
+        )
+      ) {
+        return res.status(400).json({
+          msg: `The Active To Date Should Be Greater Than Today's Date Plus ${advanceBookingDuration} Days`,
+          Status: false,
+        });
+      }
+      const result = await Product.updateProductDetailsByProductId(
+        productId,
+        productName,
+        productDescription,
+        active_toDate,
+        productCapacity
+      );
+      if (!result.affectedRows > 0) {
+        return res.status(400).json({
+          msg: "No product found with the provided id",
+          Status: false,
+        });
+      }
+      return res
+        .status(200)
+        .json({ msg: "product updated successfully", Status: true });
     } catch (error) {
-        console.log("Error in updating Product Details ", error);
-        return res.status(500).json({ msg: error.message || error, Status: false });
+      console.log("Error in updating Product Details ", error);
+      return res
+        .status(500)
+        .json({ msg: error.message || error, Status: false });
     }
-} ,
+  },
 
   deleteSlotById: async (req, res) => {
-    // In this function we are deleting entire booking if any particular slot is deleting 
+    // In this function we are deleting entire booking if any particular slot is deleting
     // This Function is created using the keeping this assumptions.
     // 1. When admin try to delete the slot then all the bookings related to that slot should be cancelled.
     // 2. In bookings it's include if let's take example that the if one booking contain the below booking
-    //    details - Booked products:  Product 1 => slotIds: 101,102,103 
+    //    details - Booked products:  Product 1 => slotIds: 101,102,103
     //                                prodcuct 2 => slotIds: 201,202
     //    In this case if admin try to delete the any of the above mentioned slot than entire booking gets cancelled.
 
     //  3. If Any Ongoing Booking is there than the we can not cancel that booking but delete the slot and keep remain this ongoing booking and cancel allother bookings
     //              Means that if today is 20th date than i try delete slotId 105(21st) a
-    //              current booking is there which is from  18th to 22 than we can not cancel this booking and only delete the slot.(We have all the data related that slot is already in the bookProduct Table)                            
+    //              current booking is there which is from  18th to 22 than we can not cancel this booking and only delete the slot.(We have all the data related that slot is already in the bookProduct Table)
     //  Same rule for when single booking contain the multiple slotIds.
     // So in short when ever we will delete the slot then first check whether there is any booking Than we cancel all the future Booking(booking_FromDate > currentDateTime) and delete the slot.
-    
+
     let slotId = req.params.id;
-    const { message,bookingCategoryId } = req.body;
+    const { message, bookingCategoryId } = req.body;
 
     try {
       // Validation checks
-      
+
       // Check if there is no message provided
       if (!message) {
         // If the above condition is true, return a bad request response with a message
@@ -832,29 +1020,35 @@ const ProductController = {
           msg: "Invalid slot ID. Please provide a positive integer.",
         });
       }
-    
+
       // In this if any ongoing booking is there than we can not cancel it.
       // So for that we comparing the bookingFromDateTime with the current date if it is greater than this than we can delete that bookings.
-          
-        const futureConfirmedBookingIds = await BookingsMaster.findAllFutureConfirmBookingsBySlotId(slotId);
-        if(futureConfirmedBookingIds.length>0){
-          
-          //  Cancel the bookings with the given bookingIds and update their status to 'cancelledByAdmin'(statusId:6)
-          // Also decreasing the bookedSlot in slotmaster table.
-           const updateStatus = await BookingsMaster.cancelBookingsByAdminOrUser(futureConfirmedBookingIds,6,message);
-           console.log(updateStatus);
-        }
-        console.log(futureConfirmedBookingIds);
+
+      const futureConfirmedBookingIds =
+        await BookingsMaster.findAllFutureConfirmBookingsBySlotId(slotId);
+      if (futureConfirmedBookingIds.length > 0) {
+        //  Cancel the bookings with the given bookingIds and update their status to 'cancelledByAdmin'(statusId:6)
+        // Also decreasing the bookedSlot in slotmaster table.
+        const updateStatus = await BookingsMaster.cancelBookingsByAdminOrUser(
+          futureConfirmedBookingIds,
+          6,
+          message
+        );
+        console.log(updateStatus);
+      }
+      console.log(futureConfirmedBookingIds);
       // Call the deleteSlot method from the SlotMaster class to delete the slot based upon the slot Id that was passed as an argument
       // Delete the Slot from DB
       // const deletedSlot = await Slot.deleteSlotById(slotId);
       // Return a success response
       return res.status(200).json({
         Status: true,
-        cancelledBookingIds: futureConfirmedBookingIds,//deletedSlot.data ? [deletedSlot.data.id] : [],
-        msg: futureConfirmedBookingIds.length > 0 ? "All bookings for the slot have been cancelled Except the OnGoing Bookings and Slot Successfully Deleted! So no more Booking for this slot can happen!!" : "Slot successfully deleted! No more bookings for this slot can happen.",
+        cancelledBookingIds: futureConfirmedBookingIds, //deletedSlot.data ? [deletedSlot.data.id] : [],
+        msg:
+          futureConfirmedBookingIds.length > 0
+            ? "All bookings for the slot have been cancelled Except the OnGoing Bookings and Slot Successfully Deleted! So no more Booking for this slot can happen!!"
+            : "Slot successfully deleted! No more bookings for this slot can happen.",
       });
-  
     } catch (error) {
       if (
         error.message.includes("error is not defined") ||

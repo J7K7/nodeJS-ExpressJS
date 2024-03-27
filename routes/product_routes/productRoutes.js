@@ -72,6 +72,8 @@ router.get('/getProductDetails/:id',auth,ProductController.getProductDetailsById
 
 router.get('/getAllProductDetails', auth,  ProductController.getAllProductsWithImagesandFeature );
 
+router.get('/searchProducts',auth,ProductController.searchProducts);
+
 router.put('/updateSlotById/:id',auth, ProductController.updateSlotById);
 
 // router.get('/getProductDetails/:id',ProductController.getProductDetailsById );
