@@ -353,7 +353,7 @@ const ProductController = {
           });
         }
       }
-      console.log("Search query is ", req.query);
+      // console.log("Search query is ", req.query);
       const allProductDetails = await Product.searchProducts(req.query);
 
       // Organize the retrieved data into the desired format

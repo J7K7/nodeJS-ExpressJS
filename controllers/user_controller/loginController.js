@@ -5,6 +5,7 @@ const jwt  = require("jsonwebtoken");
 
 const loginController = {
     login: async (req, res) => {
+      // console.log(req)
         try {
           const { email, password } = req.body;
           if (!email || !password ) return res.status(400).send({ msg: "Missing data", Status:  false });
