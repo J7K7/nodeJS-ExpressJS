@@ -32,7 +32,7 @@ POST /add-product:
     - productImages: array of files (optional) - Images representing the product.
     - bookingCategoryId: int (required) - The booking category for the product. Possible values of that id : 1 or 2. 1="slot",2="dayWise"
 */
-router.post('/addProduct',auth, productImagesUpload, ProductController.addProduct);
+router.post('/addProduct', productImagesUpload, ProductController.addProduct);
 
 /* 
  PUT /update-feature/:id:
@@ -89,5 +89,11 @@ router.put('/updateProductStatus/:id',auth, ProductController.updateProductStatu
 router.put('/deleteProduct/:id',auth, ProductController.deleteProductById );
 
 router.put('/updateProductDetails/:id',auth, ProductController.updateProductDetails);
+
+router.post('/addProductCategory' , auth , ProductController.addCategory);
+
+router.get('/getAllCategories' ,auth , ProductController.getAllProductCategories);
+
+router.post('/getAllProductsByCategories' ,auth , ProductController.getAllProductsByCategories);
 
 module.exports = router;

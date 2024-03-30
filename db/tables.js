@@ -254,6 +254,26 @@ CREATE TABLE IF NOT EXISTS bookproduct (
 );
 `
 
+const productCategory = `CREATE TABLE IF NOT EXISTS productcategory (
+  productCategoryId int NOT NULL AUTO_INCREMENT,
+  categoryName varchar(100) NOT NULL,
+  UNIQUE KEY productCategoryId_UNIQUE (productCategoryId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+`
+
+const productCategory_relation= `
+CREATE TABLE IF NOT EXISTS productcategory_product_relation (
+  productId int DEFAULT NULL,
+  productCategoryId int DEFAULT NULL,
+  id int NOT NULL AUTO_INCREMENT,
+  PRIMARY KEY (id),
+  KEY cproductCategoryId_idx (productCategoryId),
+  KEY fk_productid (productId),
+  CONSTRAINT fk_productCategoryId FOREIGN KEY (productCategoryId) REFERENCES productcategory (productCategoryId),
+  CONSTRAINT fk_productid FOREIGN KEY (productId) REFERENCES productmaster (productId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+`
+
   module.exports = {
     announcementsTable,
     bookingStatusesTable,
@@ -275,5 +295,7 @@ CREATE TABLE IF NOT EXISTS bookproduct (
     userBookingRelationTable,
     userMasterTable,
     bookingCategory,
-    request_logs
+    request_logs,
+    productCategory,
+    productCategory_relation
 };

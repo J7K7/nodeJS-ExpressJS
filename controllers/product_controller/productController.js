@@ -21,6 +21,7 @@ const ProductAllDetails = require("../../models/product_model/productAllDetails"
 const BookingsMaster = require("../../models/booking_model/bookingsMaster");
 const { check } = require("express-validator");
 const maxImagesPerProduct = process.env.MAX_IMAGES_PER_PRODUCT;
+const ProductCategory  = require("../../models/product_model/category")
 
 const ProductController = {
   addProduct: async (req, res) => {
@@ -35,10 +36,12 @@ const ProductController = {
         featureData,
         slotData,
         bookingCategoryId,
+        productCategoryId
       } = req.body;
 
       //Validate basic details of product
-      const productValidationResult = productDetailsValidation(
+      const productValidationResult = await productDetailsValidation(
+        productCategoryId,
         productName,
         productDescription,
         advanceBookingDuration,
@@ -47,9 +50,10 @@ const ProductController = {
         productCapacity,
         featureData,
         slotData,
-        bookingCategoryId
+        bookingCategoryId,
       );
       if (!productValidationResult.isValid) {
+        console.log(productValidationResult);
         //Fucntion For cleaning Up the local Storage Beacause this request is bad request so we are removing all files from local storage
         await cleanupUploadedImages(req.files);
         return res
@@ -64,6 +68,7 @@ const ProductController = {
         bookingCategoryId
       );
       if (!slotValidationResult.isValid) {
+        console.log("slot done")
         //Fucntion For cleaning Up the local Storage Beacause this request is bad request so we are removing all files from local storage
         await cleanupUploadedImages(req.files);
         return res
@@ -96,6 +101,8 @@ const ProductController = {
 
       console.log("Product Successfully verified");
 
+      console.log("slotData", slotData)
+
       //creating instance of Product Class
       const newproduct = new Product(
         productName,
@@ -106,6 +113,9 @@ const ProductController = {
         productCapacity,
         slotData
       );
+
+      console.log("newproduct")
+      console.log(newproduct);
       // Storing The product info into product Master
       const productId = await newproduct.saveProduct();
 
@@ -154,6 +164,19 @@ const ProductController = {
       // console.log(slotResult);
       // const testing= await Feature.getFeaturesByProductId(productId)
       // console.log("data",testing);
+
+
+      // Link product with category 
+      // Call the function to link the product with the category
+      const linkResult = await ProductCategory.linkProductWithCategory(productId, productCategoryId);
+
+      if (!linkResult) {
+        // If linking failed, handle the error
+        //Fucntion For cleaning Up the local Storage Beacause this request is bad request so we are removing all files from local storage
+        await cleanupUploadedImages(req.files);
+        return res.status(401).send({ Status: false, msg: "Failed to link product with category" });
+      }
+
       res.status(201).json({
         productId,
         featureRelationResult,
@@ -1064,6 +1087,75 @@ const ProductController = {
       });
     }
   },
+
+
+
+  addCategory: async (req, res) => {
+    try {
+      const { categoryName } = req.body;
+
+      // Validate category name
+      if (!categoryName) {
+        return res.status(400).json({ Status: false, msg: 'Category name is required' });
+      }
+
+      // Create an instance of the Category model and save it to the database
+      const newCategory = new ProductCategory(categoryName);
+      const productCategoryId = await newCategory.saveCategory();
+
+      if (!productCategoryId) {
+        return res.status(500).json({ Status: false, msg: 'Failed to add category' });
+      }
+
+      return res.status(201).json({ productCategoryId, Status: true, msg: 'Category added successfully' });
+    } catch (error) {
+      console.error('Error in addCategory:', error);
+      return res.status(500).json({ Status: false, msg: 'Error in adding category: ' + error.message });
+    }
+  },
+
+  getAllProductCategories: async (req, res) => {
+    try {
+      // Create an instance of the Category model
+      const category = new ProductCategory();
+
+      // Call the method to retrieve all categories
+      const categories = await category.getAllCategories();
+
+      // Return the retrieved categories as a JSON response
+      return res.status(200).json({ categories });
+    } catch (error) {
+      console.error('Error in retrieving categories:', error);
+      return res.status(500).json({ Status : false, msg: 'Error in retrieving categories:' });
+    }
+  },
+
+  getAllProductsByCategories: async (req, res) => {
+    try {
+      const { productCategoryId } = req.body;
+
+      // Validate if categoryId is provided
+      if (!productCategoryId) {
+        return res.status(400).json({ Status: false, msg: 'Category ID is required.' });
+      }
+
+      // Check if the provided productCategoryId exists in the database
+      const category = await ProductCategory.findCategoryById(productCategoryId);
+
+      if (category == null) {
+        return res.status(404).json({ Status: false, msg: 'Category not Found' });
+      }
+
+      // Retrieve products based on the provided category ID
+      const products = await ProductCategory.getProductsByCategory(productCategoryId);
+
+      // Return the retrieved products
+      return res.status(200).json({ Status: true, products });
+    } catch (error) {
+      console.error('Error in retrieving products by category:', error);
+      return res.status(500).json({ Status: false, msg: 'Error in retrieving products by category.' });
+    }
+  }
 };
 
 async function cleanupUploadedImages(images) {
