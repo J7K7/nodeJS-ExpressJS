@@ -98,7 +98,7 @@ class Product {
 
   static async searchProducts(query) {
     try {
-      const searchQuery = query.q; // Default to empty string if not provided
+      var searchQuery = query.q; // Default to empty string if not provided
       const slotDate = query.slotDate;
       const checkInDate = query.checkInDate;
       const checkOutDate = query.checkOutDate;
@@ -138,6 +138,7 @@ class Product {
 
       if (searchQuery) {
         console.log("search", searchQuery);
+        searchQuery = searchQuery.trim();
         sql += ` AND (p.productName LIKE ? OR p.productDescription LIKE ?)`;
         const searchPattern = `%${searchQuery}%`; // Add wildcard '%' around search query
         values.push(searchPattern, searchPattern); // Push parameter values to array
