@@ -51,7 +51,6 @@ const loginController = {
             roleId: roleData.roleId,
             phoneNumber:  result.phoneNumber,
             image: result.profilePic,
-            Status: true,
           };
     
           res.status(200).json({response, msg : "user logged in successfully", Status : true});

@@ -20,8 +20,12 @@ const { all } = require("../../routes/product_routes/productRoutes");
 const ProductAllDetails = require("../../models/product_model/productAllDetails");
 const BookingsMaster = require("../../models/booking_model/bookingsMaster");
 const { check } = require("express-validator");
+const {
+  organizeProductDetails,
+  organizeProductDetailsMap,
+} = require("../../common/common");
 const maxImagesPerProduct = process.env.MAX_IMAGES_PER_PRODUCT;
-const ProductCategory  = require("../../models/product_model/category")
+const ProductCategory = require("../../models/product_model/category");
 
 const ProductController = {
   addProduct: async (req, res) => {
@@ -36,7 +40,7 @@ const ProductController = {
         featureData,
         slotData,
         bookingCategoryId,
-        productCategoryId
+        productCategoryId,
       } = req.body;
 
       //Validate basic details of product
@@ -50,7 +54,7 @@ const ProductController = {
         productCapacity,
         featureData,
         slotData,
-        bookingCategoryId,
+        bookingCategoryId
       );
       if (!productValidationResult.isValid) {
         console.log(productValidationResult);
@@ -68,7 +72,7 @@ const ProductController = {
         bookingCategoryId
       );
       if (!slotValidationResult.isValid) {
-        console.log("slot done")
+        console.log("slot done");
         //Fucntion For cleaning Up the local Storage Beacause this request is bad request so we are removing all files from local storage
         await cleanupUploadedImages(req.files);
         return res
@@ -101,7 +105,7 @@ const ProductController = {
 
       console.log("Product Successfully verified");
 
-      console.log("slotData", slotData)
+      console.log("slotData", slotData);
 
       //creating instance of Product Class
       const newproduct = new Product(
@@ -114,7 +118,7 @@ const ProductController = {
         slotData
       );
 
-      console.log("newproduct")
+      console.log("newproduct");
       console.log(newproduct);
       // Storing The product info into product Master
       const productId = await newproduct.saveProduct();
@@ -165,16 +169,20 @@ const ProductController = {
       // const testing= await Feature.getFeaturesByProductId(productId)
       // console.log("data",testing);
 
-
-      // Link product with category 
+      // Link product with category
       // Call the function to link the product with the category
-      const linkResult = await ProductCategory.linkProductWithCategory(productId, productCategoryId);
+      const linkResult = await ProductCategory.linkProductWithCategory(
+        productId,
+        productCategoryId
+      );
 
       if (!linkResult) {
         // If linking failed, handle the error
         //Fucntion For cleaning Up the local Storage Beacause this request is bad request so we are removing all files from local storage
         await cleanupUploadedImages(req.files);
-        return res.status(401).send({ Status: false, msg: "Failed to link product with category" });
+        return res
+          .status(401)
+          .send({ Status: false, msg: "Failed to link product with category" });
       }
 
       res.status(201).json({
@@ -198,53 +206,58 @@ const ProductController = {
       });
     }
   },
+
   getAllProductsWithImagesandFeature: async (req, res) => {
     try {
-      // if()
-      // Query your database to fetch all product details
-      const allProductDetails =
-        await Product.getAllProductDetailsWithImagesAndFeatures();
+      const productCategoryId=req.query.productCategoryId;
+      // console.log(productCategoryId,"category id");
+      const categoryId = productCategoryId !== null ? productCategoryId : '';
+      // Product Category Id is there than we pass that else empty function
+      const allProductDetails = await Product.getAllProductDetailsWithImagesAndFeatures(categoryId);
+      /* This code is converted into fuunction which takes allProductDetails and convert into array of product in ProductAllDeatails model format
 
       // Organize the retrieved data into the desired format
       // console.log(allProductDetails)
-      const productsData = {};
-      allProductDetails.forEach((row) => {
-        const productId = row.productId;
-        if (productId && !productsData[productId]) {
-          const {
-            productId,
-            productName,
-            productDescription,
-            advanceBookingDuration,
-            active_fromDate,
-            active_toDate,
-          } = row;
-          productsData[productId] = new ProductAllDetails(
-            productId,
-            productName,
-            productDescription,
-            advanceBookingDuration,
-            moment(active_fromDate).format("YYYY-MM-DD"),
-            moment(active_toDate).format("YYYY-MM-DD")
-          );
-        }
-        if (row.imageId && !productsData[productId].hasImage(row.imageId)) {
-          productsData[productId].addImage(row.imageId, row.imagePath);
-        }
-        if (
-          row.featureId &&
-          !productsData[productId].hasFeature(row.featureId)
-        ) {
-          productsData[productId].addFeature(
-            row.featureId,
-            row.featureName,
-            row.featureDescription
-          );
-        }
-      });
+      // const productsData = {};
+      // allProductDetails.forEach((row) => {
+      //   const productId = row.productId;
+      //   if (productId && !productsData[productId]) {
+      //     const {
+      //       productId,
+      //       productName,
+      //       productDescription,
+      //       advanceBookingDuration,
+      //       active_fromDate,
+      //       active_toDate,
+      //     } = row;
+      //     productsData[productId] = new ProductAllDetails(
+      //       productId,
+      //       productName,
+      //       productDescription,
+      //       advanceBookingDuration,
+      //       moment(active_fromDate).format("YYYY-MM-DD"),
+      //       moment(active_toDate).format("YYYY-MM-DD")
+      //     );
+      //   }
+      //   if (row.imageId && !productsData[productId].hasImage(row.imageId)) {
+      //     productsData[productId].addImage(row.imageId, row.imagePath);
+      //   }
+      //   if (
+      //     row.featureId &&
+      //     !productsData[productId].hasFeature(row.featureId)
+      //   ) {
+      //     productsData[productId].addFeature(
+      //       row.featureId,
+      //       row.featureName,
+      //       row.featureDescription
+      //     );
+      //   }
+      // }); 
+      
+    */
 
       // Convert the product objects to an array
-      const productsArray = Object.values(productsData);
+      const productsArray = organizeProductDetailsMap(allProductDetails);
 
       // Return the result
       res.status(200).json({ Status: true, productsData: productsArray });
@@ -276,42 +289,44 @@ const ProductController = {
           .status(404)
           .json({ Status: false, msg: "Product not found." });
       }
+      //  old iimplemetation this is now converted into function
       // Create an object to store product details
 
       // Created the Instance of Product Details class and add data in it.
-      const {
-        productName,
-        advanceBookingDuration,
-        active_fromDate,
-        active_toDate,
-      } = productDetails[0];
-      const productData = new ProductAllDetails(
-        productId,
-        productName,
-        advanceBookingDuration,
-        moment(active_fromDate).format("YYYY-MM-DD"),
-        moment(active_toDate).format("YYYY-MM-DD")
-      );
+      // const {
+      //   productName,
+      //   advanceBookingDuration,
+      //   active_fromDate,
+      //   active_toDate,
+      // } = productDetails[0];
+      // const productData = new ProductAllDetails(
+      //   productId,
+      //   productName,
+      //   advanceBookingDuration,
+      //   moment(active_fromDate).format("YYYY-MM-DD"),
+      //   moment(active_toDate).format("YYYY-MM-DD")
+      // );
 
-      productDetails.forEach((row) => {
-        // const productId = row.productId;
+      // productDetails.forEach((row) => {
+      //   // const productId = row.productId;
 
-        // Add image if it doesn't exist already
-        if (!productData.hasImage(row.imageId)) {
-          productData.addImage(row.imageId, row.imagePath);
-        }
+      //   // Add image if it doesn't exist already
+      //   if (!productData.hasImage(row.imageId)) {
+      //     productData.addImage(row.imageId, row.imagePath);
+      //   }
 
-        // Add feature if it doesn't exist already
-        if (!productData.hasFeature(row.featureId)) {
-          productData.addFeature(
-            row.featureId,
-            row.featureName,
-            row.featureDescription
-          );
-        }
-      });
+      //   // Add feature if it doesn't exist already
+      //   if (!productData.hasFeature(row.featureId)) {
+      //     productData.addFeature(
+      //       row.featureId,
+      //       row.featureName,
+      //       row.featureDescription
+      //     );
+      //   }
+      // });
+      const productsArray = organizeProductDetailsMap(productDetails);
       // return productDetails;
-      res.status(200).json({ Status: true, productData });
+      res.status(200).json({ Status: true, productData: productsArray[0] });
     } catch (error) {
       console.error("Error fetching product details:", error);
       return res.status(500).json({
@@ -326,7 +341,7 @@ const ProductController = {
       const slotDate = req.query.slotDate;
       const checkInDate = req.query.checkInDate;
       const checkOutDate = req.query.checkOutDate;
-      console.log(req.query);
+      // console.log(req.query);
       // Query your database to fetch all product details
       if (slotDate) {
         if (slotDate && !isValidSqlDateFormat(slotDate)) {
@@ -340,8 +355,7 @@ const ProductController = {
         if (!slotDate1.isSameOrAfter(currentDate)) {
           return res.status(400).json({
             Status: false,
-            msg:
-              "SloltDate must be greater than or equal to the current date.",
+            msg: "SloltDate must be greater than or equal to the current date.",
           });
         }
       }
@@ -359,10 +373,9 @@ const ProductController = {
 
         // Validate that toDate is greater than or equal to fromDate
         if (!toDate.isSameOrAfter(fromDate)) {
-          return res.status(400).json ({
+          return res.status(400).json({
             Status: false,
-            msg:
-              "CheckOut Date must be greater than or equal to CheckIn Date",
+            msg: "CheckOut Date must be greater than or equal to CheckIn Date",
           });
         }
 
@@ -379,51 +392,59 @@ const ProductController = {
       // console.log("Search query is ", req.query);
       const allProductDetails = await Product.searchProducts(req.query);
 
-      // Organize the retrieved data into the desired format
-      // console.log(allProductDetails)
-      const productsData = {};
-      allProductDetails.forEach((row) => {
-        const productId = row.productId;
-        if (productId && !productsData[productId]) {
-          const {
-            productId,
-            productName,
-            productDescription,
-            advanceBookingDuration,
-            active_fromDate,
-            active_toDate,
-          } = row;
-          productsData[productId] = new ProductAllDetails(
-            productId,
-            productName,
-            productDescription,
-            advanceBookingDuration,
-            moment(active_fromDate).format("YYYY-MM-DD"),
-            moment(active_toDate).format("YYYY-MM-DD")
-          );
-        }
-        if (row.imageId && !productsData[productId].hasImage(row.imageId)) {
-          productsData[productId].addImage(row.imageId, row.imagePath);
-        }
-        if (
-          row.featureId &&
-          !productsData[productId].hasFeature(row.featureId)
-        ) {
-          productsData[productId].addFeature(
-            row.featureId,
-            row.featureName,
-            row.featureDescription
-          );
-        }
-      });
+      // Organize the data into ProductDeatails Model
 
-      // Convert the product objects to an array
-      const productsArray = Object.values(productsData);
+      const productsArray = organizeProductDetailsMap(allProductDetails);
 
       // Return the result
       res.status(200).json({ Status: true, productsData: productsArray });
     } catch (error) {
-      console.error("Error In fetching product details:", error);
+      console.error(
+        "Error In fetching product details for searchProducts:",
+        error
+      );
+      return res.status(500).json({
+        Status: false,
+        msg: "Internal server error: " + error.message,
+      });
+    }
+  },
+  popularProducts: async (req, res) => {
+    try {
+      // Query your database to fetch all product details
+      const allProductDetails = await Product.getPopularProducts();
+      // console.log(allProductDetails);
+      // Get only unique product ids from the data and convert into Productdetails Model
+      const productsArray = organizeProductDetailsMap(allProductDetails);
+
+      // Return the result
+      res.status(200).json({ Status: true, productsData: productsArray });
+    } catch (error) {
+      console.error("Error fetching popular product details:", error);
+      return res.status(500).json({
+        Status: false,
+        msg: "Internal server error: " + error.message,
+      });
+    }
+  },
+  latestProducts: async (req, res) => {
+    // This API return the top 10 latest product  added in the store if category Id is provided than it  will provide the product of that particular category otherwise it return from all products
+    try {
+      const productCategoryId=req.query.productCategoryId;
+      // console.log(productCategoryId,"category id");
+      const categoryId = productCategoryId !== null ? productCategoryId : '';
+
+      // Query your database to fetch all product details limit to 10
+      // Product Category Id is there than we pass that else empty function
+      const allProductDetails = await Product.getLatestProducts(categoryId);
+     
+      // Get only unique product ids from the data and convert into Productdetails Model
+      const productsArray = organizeProductDetailsMap(allProductDetails);
+
+      // Return the result
+      res.status(200).json({ Status: true, productsData: productsArray });
+    } catch (error) {
+      console.error("Error fetching Latest product details:", error);
       return res.status(500).json({
         Status: false,
         msg: "Internal server error: " + error.message,
@@ -1088,15 +1109,15 @@ const ProductController = {
     }
   },
 
-
-
   addCategory: async (req, res) => {
     try {
       const { categoryName } = req.body;
 
       // Validate category name
       if (!categoryName) {
-        return res.status(400).json({ Status: false, msg: 'Category name is required' });
+        return res
+          .status(400)
+          .json({ Status: false, msg: "Category name is required" });
       }
 
       // Create an instance of the Category model and save it to the database
@@ -1104,13 +1125,26 @@ const ProductController = {
       const productCategoryId = await newCategory.saveCategory();
 
       if (!productCategoryId) {
-        return res.status(500).json({ Status: false, msg: 'Failed to add category' });
+        return res
+          .status(500)
+          .json({ Status: false, msg: "Failed to add category" });
       }
 
-      return res.status(201).json({ productCategoryId, Status: true, msg: 'Category added successfully' });
+      return res
+        .status(201)
+        .json({
+          productCategoryId,
+          Status: true,
+          msg: "Category added successfully",
+        });
     } catch (error) {
-      console.error('Error in addCategory:', error);
-      return res.status(500).json({ Status: false, msg: 'Error in adding category: ' + error.message });
+      console.error("Error in addCategory:", error);
+      return res
+        .status(500)
+        .json({
+          Status: false,
+          msg: "Error in adding category: " + error.message,
+        });
     }
   },
 
@@ -1125,37 +1159,52 @@ const ProductController = {
       // Return the retrieved categories as a JSON response
       return res.status(200).json({ categories });
     } catch (error) {
-      console.error('Error in retrieving categories:', error);
-      return res.status(500).json({ Status : false, msg: 'Error in retrieving categories:' });
+      console.error("Error in retrieving categories:", error);
+      return res
+        .status(500)
+        .json({ Status: false, msg: "Error in retrieving categories:" });
     }
   },
 
-  getAllProductsByCategories: async (req, res) => {
-    try {
-      const { productCategoryId } = req.body;
+  // getAllProductsByCategories: async (req, res) => {
+  //   try {
+  //     const { productCategoryId } = req.body;
 
-      // Validate if categoryId is provided
-      if (!productCategoryId) {
-        return res.status(400).json({ Status: false, msg: 'Category ID is required.' });
-      }
+  //     // Validate if categoryId is provided
+  //     if (!productCategoryId) {
+  //       return res
+  //         .status(400)
+  //         .json({ Status: false, msg: "Category ID is required." });
+  //     }
 
-      // Check if the provided productCategoryId exists in the database
-      const category = await ProductCategory.findCategoryById(productCategoryId);
+  //     // Check if the provided productCategoryId exists in the database
+  //     const category = await ProductCategory.findCategoryById(
+  //       productCategoryId
+  //     );
 
-      if (category == null) {
-        return res.status(404).json({ Status: false, msg: 'Category not Found' });
-      }
+  //     if (category == null) {
+  //       return res
+  //         .status(404)
+  //         .json({ Status: false, msg: "Category not Found" });
+  //     }
 
-      // Retrieve products based on the provided category ID
-      const products = await ProductCategory.getProductsByCategory(productCategoryId);
+  //     // Retrieve products based on the provided category ID
+  //     const products = await ProductCategory.getProductsByCategory(
+  //       productCategoryId
+  //     );
 
-      // Return the retrieved products
-      return res.status(200).json({ Status: true, products });
-    } catch (error) {
-      console.error('Error in retrieving products by category:', error);
-      return res.status(500).json({ Status: false, msg: 'Error in retrieving products by category.' });
-    }
-  }
+  //     // Return the retrieved products
+  //     return res.status(200).json({ Status: true, products });
+  //   } catch (error) {
+  //     console.error("Error in retrieving products by category:", error);
+  //     return res
+  //       .status(500)
+  //       .json({
+  //         Status: false,
+  //         msg: "Error in retrieving products by category.",
+  //       });
+  //   }
+  // },
 };
 
 async function cleanupUploadedImages(images) {

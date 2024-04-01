@@ -1,12 +1,15 @@
 const { combineDateTime } = require("../../common/dateFormat");
 const { executeQuery } = require("../../db/connection");
-const { slotMasterTable } = require("../../db/tables");
+const { slotMasterTable, productCategory } = require("../../db/tables");
 const Feature = require("./feature");
 const ProductImage = require("./image");
 const Slot = require("./slot");
 const moment = require("moment");
+const { generalProductDetailsQuery } = require("../../common/common");
 
 // This is the Model for the productMaster Table .
+//In this view can be cretaed for product details keep it for future.
+
 class Product {
   constructor(
     productName,
@@ -74,39 +77,16 @@ class Product {
     }
   }
   // Get All ProductDetails With Images And Feature not deleted products
-  static async getAllProductDetailsWithImagesAndFeatures() {
+  static async getAllProductDetailsWithImagesAndFeatures(productCategoryId=null) {
     try {
       // SQL query to fetch all product details with images and features
-      const query = `
-        SELECT
-        pm.productId,
-        pm.productName,
-        pm.productDescription,
-        pm.advanceBookingDuration,
-        pm.active_fromDate,
-        pm.active_toDate,
-        pm.productCapacity,
-        pi.imageId,
-        pi.imagePath,
-        pf.featureId,
-        pf.featureName,
-        pf.featureDescription
-      FROM
-          productmaster AS pm
-      LEFT JOIN
-          productImage_relation AS pir ON pm.productId = pir.productId
-      LEFT JOIN
-          productimages AS pi ON pir.imageId = pi.imageId
-      LEFT JOIN
-          productfeature_relation AS pfr ON pm.productId = pfr.productId
-      LEFT JOIN
-          product_features AS pf ON pfr.featureId = pf.featureId
-      WHERE 
-          pm.isDeleted = 0 
-        `;
-
+      var query = generalProductDetailsQuery()+`LEFT JOIN productcategory_product_relation AS pcr ON pm.productId = pcr.productId
+      WHERE pm.isDeleted = 0 AND pm.isActive = 1
+      AND (pcr.productCategoryId = ? OR ? IS NULL)`;
+      // query += `pm.isDeleted=0 `;
+      console.log(query);
       // Execute the query
-      const result = await executeQuery(query);
+      const result = await executeQuery(query,[productCategoryId,productCategoryId]);
 
       // Return the result rows
       return result;
@@ -118,12 +98,11 @@ class Product {
 
   static async searchProducts(query) {
     try {
-      const searchQuery = query.q ; // Default to empty string if not provided
+      const searchQuery = query.q; // Default to empty string if not provided
       const slotDate = query.slotDate;
-      const checkInDate=query.checkInDate;
-      const checkOutDate=query.checkOutDate;
+      const checkInDate = query.checkInDate;
+      const checkOutDate = query.checkOutDate;
 
-  
       // Build the base query
       let sql = `
         SELECT p.productId,
@@ -153,25 +132,23 @@ class Product {
         LEFT JOIN slotmaster sm ON spr.slotId = sm.slotId
         WHERE p.isDeleted=0 and p.isActive=1
       `;
-  
+
       // Add WHERE clauses for search query (if provided) and active slots (if date provided)
       const values = []; // Array to store query parameter values
-      
+
       if (searchQuery) {
-        console.log("search",searchQuery)
+        console.log("search", searchQuery);
         sql += ` AND (p.productName LIKE ? OR p.productDescription LIKE ?)`;
         const searchPattern = `%${searchQuery}%`; // Add wildcard '%' around search query
         values.push(searchPattern, searchPattern); // Push parameter values to array
       }
-  
+
       if (slotDate) {
         sql += `AND sm.slotDate = ? AND sm.slotActive = 1`;
         values.push(slotDate); // Push slotDate parameter value to array
-      }
-      else if(checkInDate && checkOutDate){
-        
-        sql += 'AND '; // Combine search and date filters with AND
-        
+      } else if (checkInDate && checkOutDate) {
+        sql += "AND "; // Combine search and date filters with AND
+
         sql += `
           (SELECT COUNT(*) 
           FROM slotmaster AS sm2
@@ -182,9 +159,9 @@ class Product {
           AND sm2.slotActive = 1
           ) = DATEDIFF(?, ?) + 1
         `;
-        values.push(checkInDate,checkOutDate,checkOutDate,checkInDate);
+        values.push(checkInDate, checkOutDate, checkOutDate, checkInDate);
       }
-  
+
       // Execute the query
       // console.log(sql);
       // console.log(values);
@@ -198,37 +175,14 @@ class Product {
       throw new Error(`Error In Searching product: ${error.message}`);
     }
   }
-  
 
-  //Get Product Details By Id
+  //Get Product Details By Id This resturn all type of product deleted and not active etc..
   static async getProductDetailsById(productId) {
     try {
       // Query product details from productmaster table
-      const productDetailsQuery = `
-      SELECT
-        pm.productId,
-        pm.productName,
-        pm.productDescription,
-        pm.advanceBookingDuration,
-        pm.active_fromDate,
-        pm.active_toDate,
-        pm.productCapacity,
-        pi.imageId,
-        pi.imagePath,
-        pf.featureId,
-        pf.featureName,
-        pf.featureDescription
-      FROM
-          productmaster AS pm
-      LEFT JOIN
-          productImage_relation AS pir ON pm.productId = pir.productId
-      LEFT JOIN
-          productimages AS pi ON pir.imageId = pi.imageId
-      LEFT JOIN
-          productfeature_relation AS pfr ON pm.productId = pfr.productId
-      LEFT JOIN
-          product_features AS pf ON pfr.featureId = pf.featureId
-      WHERE
+      const productDetailsQuery =
+        generalProductDetailsQuery() +
+        `WHERE
           pm.productId = ? 
       `;
       const result = await executeQuery(productDetailsQuery, [productId]);
@@ -242,6 +196,120 @@ class Product {
       throw error;
     }
   }
+  // It return's the top 10 popular products  based on number of bookings made for that products
+  // If it is less than the 10 products than add some other products
+  static async getPopularProducts() {
+    try {
+      // Build the base query
+      const topProductIdsQuery = `
+      SELECT productId
+      FROM bookProduct
+      GROUP BY productId
+      ORDER BY COUNT(bookingId) DESC
+      LIMIT 10
+  `;
+      // In this need to add one more case where we have to show only those products which are currently available in market place means not deleted and active
+      //  So keep it for future if needed (there less chances that admin delete it's most selling Product)
+      const topProductIdsResult = await executeQuery(topProductIdsQuery);
+      const topProductIds = topProductIdsResult.map((row) => row.productId);
+
+      let additionalProductIdsParams = [];
+
+      // If topProductIds has less than 10 elements, add additional IDs
+      if (topProductIds.length < 10) {
+        // If need to generate random product than add
+        // ORDER BY RAND()
+        // but it slows down the query execution time so we are not using it here
+        const remainingIdsCount = 10 - topProductIds.length;
+        const additionalIdsQuery = `
+          SELECT productId
+          FROM productmaster
+          WHERE productId NOT IN (${topProductIds.join(
+            ","
+          )}) and isActive=1 and isDeleted=0
+          LIMIT ${remainingIdsCount}
+      `;
+        const additionalIdsResult = await executeQuery(additionalIdsQuery);
+        additionalProductIdsParams = additionalIdsResult.map(
+          (row) => row.productId
+        );
+      }
+
+      // Combine topProductIds and additionalProductIdsParams to get a total of 10 IDs
+      const finalProductIds = [...topProductIds, ...additionalProductIdsParams];
+
+      // Now use finalProductIds For fething productDetails
+      const result = await this.getProductDetailsForIds(finalProductIds);
+
+      // const result = await executeQuery(sql); // Pass the SQL query and parameter values to executeQuery
+      // console.log(finalProductIds);
+      // console.log(result);
+      return result;
+    } catch (error) {
+      console.log(error);
+      throw new Error(`Error In Finding Popular product: ${error.message}`);
+    }
+  }
+  // It return's the top 10 latest products which are added into database.
+  // This return active and not deleted products with that particular category
+  static async getLatestProducts(productCategoryId = null) {
+    try {
+      // Build the base query
+      let latestProductIdQuery = `
+              SELECT pm.productId
+        FROM productmaster AS pm
+        LEFT JOIN productcategory_product_relation AS pcr ON pm.productId = pcr.productId
+        WHERE pm.isDeleted = 0 AND pm.isActive = 1
+        AND (pcr.productCategoryId = ? OR ? IS NULL)
+        GROUP BY pm.productId
+        ORDER BY pm.timestamp DESC
+        LIMIT 10`;
+
+      const latestProductIdsResult = await executeQuery(latestProductIdQuery,[productCategoryId,productCategoryId]); // Pass the SQL query and parameter values to executeQuery
+      const latestProductIds = latestProductIdsResult.map((row) => row.productId);
+      // If No product Found than return the empty array
+      if(latestProductIdsResult.length==0){
+        return [];
+      }
+      
+      // console.log(latestProductIds);
+      const result = await this.getProductDetailsForIds(latestProductIds);
+
+      return result;
+    } catch (error) {
+      console.log(error);
+      throw new Error(`Error In Finding Popular product: ${error.message}`);
+    }
+  }
+  static async getProductDetailsForIds(productIds) {
+    try {
+      if (!Array.isArray(productIds)) {
+        throw new Error("Invalid productIds array.");
+      }
+
+      // Construct the IN clause for the SQL query
+      const productIdList = productIds.map((id) => `'${id}'`).join(",");
+
+      // Build the product details query with the specified order
+      const productDetailsQuery =
+        generalProductDetailsQuery() +
+        `
+        WHERE pm.productId IN (${productIdList})
+        ORDER BY FIELD(pm.productId, ${productIdList})
+      `;
+
+      const result = await executeQuery(productDetailsQuery, [
+        ...productIds,
+        ...productIds,
+      ]);
+      // console.log(result);
+      return result;
+    } catch (error) {
+      console.error("Error Fetching product details:", error);
+      throw error;
+    }
+  }
+
   // Find Product By id in productMaster
   static async findProductById(productId) {
     try {

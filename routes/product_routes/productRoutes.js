@@ -72,7 +72,12 @@ router.get('/getProductDetails/:id',auth,ProductController.getProductDetailsById
 
 router.get('/getAllProductDetails', auth,  ProductController.getAllProductsWithImagesandFeature );
 
+router.get('/popularProducts',auth,ProductController.popularProducts );
+
 router.get('/searchProducts',auth,ProductController.searchProducts);
+
+router.get('/latestProducts',auth,ProductController.latestProducts );
+
 
 router.put('/updateSlotById/:id',auth, ProductController.updateSlotById);
 
@@ -94,6 +99,6 @@ router.post('/addProductCategory' , auth , ProductController.addCategory);
 
 router.get('/getAllCategories' ,auth , ProductController.getAllProductCategories);
 
-router.post('/getAllProductsByCategories' ,auth , ProductController.getAllProductsByCategories);
+// router.post('/getAllProductsByCategories' ,auth , ProductController.getAllProductsByCategories);
 
 module.exports = router;
