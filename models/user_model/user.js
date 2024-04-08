@@ -134,7 +134,8 @@ class User {
   static findUserById = async (id) => {
     try {
       let query =
-        "select userId, email, password, firstName, lastName, phoneNumber, profilePic from usermaster where userId=? AND isDeleted = 0";
+        // "select userId, email, password, firstName, lastName, roleId, phoneNumber, profilePic from usermaster where userId=? AND isDeleted = 0";
+        "select um.userId, um.email, um.password, um.firstName, um.lastName, urr.roleId, um.phoneNumber, um.profilePic from usermaster as um inner join userrole_relation as urr on um.userId = urr.userId where um.userId = ? and um.isDeleted=0"
       let queryparam = [id];
       const result = await executeQuery(query, queryparam);
       if (!result) {

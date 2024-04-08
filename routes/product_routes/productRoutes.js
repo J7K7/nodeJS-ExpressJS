@@ -97,8 +97,12 @@ router.put('/updateProductDetails/:id',auth, ProductController.updateProductDeta
 
 router.post('/addProductCategory' , auth , ProductController.addCategory);
 
+router.put('/editProductCategory', auth , ProductController.editCategory);
+
+router.delete('/deleteProductCategory', auth , ProductController.deleteCategory);
+
 router.get('/getAllCategories' ,auth , ProductController.getAllProductCategories);
 
-// router.post('/getAllProductsByCategories' ,auth , ProductController.getAllProductsByCategories);
+router.get('/getAllProductsByCategories/:productCategoryId' ,auth , ProductController.getAllProductsByCategories);
 
 module.exports = router;

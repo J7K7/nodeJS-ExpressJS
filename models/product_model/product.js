@@ -84,7 +84,7 @@ class Product {
       WHERE pm.isDeleted = 0 AND pm.isActive = 1
       AND (pcr.productCategoryId = ? OR ? IS NULL)`;
       // query += `pm.isDeleted=0 `;
-      console.log(query);
+      // console.log(query);
       // Execute the query
       const result = await executeQuery(query,[productCategoryId,productCategoryId]);
 

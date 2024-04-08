@@ -50,7 +50,7 @@ const loginController = {
             lastName: result.lastName,
             roleId: roleData.roleId,
             phoneNumber:  result.phoneNumber,
-            image: result.profilePic,
+            profilePic: result.profilePic,
           };
     
           res.status(200).json({response, msg : "user logged in successfully", Status : true});

@@ -1148,6 +1148,67 @@ const ProductController = {
     }
   },
 
+  editCategory: async (req, res) => {
+    try {
+      const { productCategoryId, categoryName } = req.body;
+
+      // Validate category ID and name
+      if (!productCategoryId || !categoryName) {
+        return res.status(400).json({ Status: false, msg: 'Category ID and name are required' });
+      }
+
+      // Check if the category exists
+      const existingCategory = await ProductCategory.findCategoryById(productCategoryId);
+      if (!existingCategory) {
+        return res.status(404).json({ Status: false, msg: 'Category not found' });
+      }
+
+      // Create an instance of ProductCategory
+      const category = new ProductCategory(categoryName);
+      // Update the category
+      const result = await category.updateCategory(productCategoryId);
+
+      if (result.affectedRows == 0) {
+        return res.status(500).json({ Status: false, msg: 'Failed to update category' });
+      }
+
+      return res.status(200).json({ Status: true, msg: 'Category updated successfully' });
+    } catch (error) {
+      console.error('Error in editCategory:', error);
+      return res.status(500).json({ Status: false, msg: 'Error in editing category: ' + error.message });
+    }
+  },
+
+  // Method to delete a category if no products are associated with it
+  deleteCategory: async (req, res) => {
+    try {
+      const { productCategoryId } = req.body;
+
+      // Validate category ID and name
+      if (!productCategoryId) {
+        return res.status(400).json({ Status: false, msg: 'Category ID is required' });
+      }
+
+      // Check if the category exists
+      const existingCategory = await ProductCategory.findCategoryById(productCategoryId);
+      if (!existingCategory) {
+        return res.status(404).json({ Status: false, msg: 'Category not found' });
+      }
+
+      // Delete the category
+      const deletionResult = await ProductCategory.deleteCategory(productCategoryId);
+
+      if (deletionResult.success) {
+        return res.status(200).json({ Status: true, message: deletionResult.message });
+      } else {
+        return res.status(400).json({ Status: false, message: deletionResult.message });
+      }
+    } catch (error) {
+      console.error('Error in deleting category:', error);
+      return res.status(400).json({ Status: false, message: 'Error in deleting category:' });
+    }
+  },
+
   getAllProductCategories: async (req, res) => {
     try {
       // Create an instance of the Category model
@@ -1166,45 +1227,45 @@ const ProductController = {
     }
   },
 
-  // getAllProductsByCategories: async (req, res) => {
-  //   try {
-  //     const { productCategoryId } = req.body;
+  getAllProductsByCategories: async (req, res) => {
+    try {
+      const { productCategoryId } = req.params;
 
-  //     // Validate if categoryId is provided
-  //     if (!productCategoryId) {
-  //       return res
-  //         .status(400)
-  //         .json({ Status: false, msg: "Category ID is required." });
-  //     }
+      // Validate if categoryId is provided
+      if (!productCategoryId) {
+        return res
+          .status(400)
+          .json({ Status: false, msg: "Category ID is required." });
+      }
 
-  //     // Check if the provided productCategoryId exists in the database
-  //     const category = await ProductCategory.findCategoryById(
-  //       productCategoryId
-  //     );
+      // Check if the provided productCategoryId exists in the database
+      const category = await ProductCategory.findCategoryById(
+        productCategoryId
+      );
 
-  //     if (category == null) {
-  //       return res
-  //         .status(404)
-  //         .json({ Status: false, msg: "Category not Found" });
-  //     }
+      if (category == null) {
+        return res
+          .status(404)
+          .json({ Status: false, msg: "Category not Found" });
+      }
 
-  //     // Retrieve products based on the provided category ID
-  //     const products = await ProductCategory.getProductsByCategory(
-  //       productCategoryId
-  //     );
+      // Retrieve products based on the provided category ID
+      const products = await ProductCategory.getProductsByCategory(
+        productCategoryId
+      );
 
-  //     // Return the retrieved products
-  //     return res.status(200).json({ Status: true, products });
-  //   } catch (error) {
-  //     console.error("Error in retrieving products by category:", error);
-  //     return res
-  //       .status(500)
-  //       .json({
-  //         Status: false,
-  //         msg: "Error in retrieving products by category.",
-  //       });
-  //   }
-  // },
+      // Return the retrieved products
+      return res.status(200).json({ Status: true, products });
+    } catch (error) {
+      console.error("Error in retrieving products by category:", error);
+      return res
+        .status(500)
+        .json({
+          Status: false,
+          msg: "Error in retrieving products by category.",
+        });
+    }
+  },
 };
 
 async function cleanupUploadedImages(images) {

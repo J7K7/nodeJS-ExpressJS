@@ -77,6 +77,42 @@ class ProductCategory {
         }
     }
 
+    // Method to update a category in the database
+    async updateCategory(categoryId) {
+        try {
+            const updateQuery = 'UPDATE productcategory SET categoryName = ? WHERE productCategoryId = ?';
+            const result = await executeQuery(updateQuery, [this.categoryName, categoryId]);
+            return result; // Return the result of the update operation
+        } catch (error) {
+            console.error('Error in updating category:', error);
+            throw error; // Throw the error for handling in the calling function
+        }
+    }
+
+        // Method to delete a category if no products are associated with it
+        static async deleteCategory(productCategoryId) {
+            try {
+                // Check if there are any associated products
+                const productCountQuery = 'SELECT COUNT(*) as productCount FROM productcategory_product_relation WHERE productCategoryId = ?';
+                const productCountResult = await executeQuery(productCountQuery, [productCategoryId]);
+                const productCount = productCountResult[0].productCount;
+    
+                if (productCount > 0) {
+                    // Return an error if there are associated products
+                    return { success: false, message: 'Cannot delete category. Products are associated with this category.' };
+                }
+    
+                // If no associated products, delete the category
+                const deleteQuery = 'DELETE FROM productcategory WHERE productCategoryId = ?';
+                await executeQuery(deleteQuery, [productCategoryId]);
+    
+                return { success: true, message: 'Category deleted successfully.' };
+            } catch (error) {
+                console.error('Error in deleting category:', error);
+                throw error; // Throw the error for handling in the calling function
+            }
+        }
+
 }
 
 module.exports = ProductCategory;

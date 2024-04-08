@@ -118,7 +118,7 @@ async function defaultEntries(connection) {
       await insertDefaultAdmin();
     }
 
-    const permissionNames = ['registerRole', 'getRoles', 'addRole', 'getPermissions', 'updateRole', 'deleteRole', 'updateUserRole', 'updateRolePermission', 'displayUserRole', 'displayRolesWithPermission', 'login', 'register', 'getProfile', 'updateProfile', 'deleteProfile', 'updatePassword', 'updateProfilePicture', 'cart', 'addToCart', 'removeFromCart', 'confirmBooking', 'cancelBooking', 'orders', 'addProduct', 'updateFeature', 'addFeature', 'deleteFeature', 'deleteImage', 'addImage', 'getProductDetails', 'getAllProductDetails', 'updateSlotById', 'updateSlotStatus', 'deleteSlotById', 'addSingleSlotByProductId', 'updateProductStatus', 'deleteProduct', 'updateProductDetails', 'searchProducts', 'popularProducts', 'latestProducts','addProductCategory','getAllCategories','getAllProductsByCategories'];
+    const permissionNames = ['registerRole', 'getRoles', 'addRole', 'getPermissions', 'updateRole', 'deleteRole', 'updateUserRole', 'updateRolePermission', 'displayUserRole', 'displayRolesWithPermission', 'login', 'register', 'getProfile', 'updateProfile', 'deleteProfile', 'updatePassword', 'updateProfilePicture', 'cart', 'addToCart', 'removeFromCart', 'confirmBooking', 'cancelBooking', 'orders', 'addProduct', 'updateFeature', 'addFeature', 'deleteFeature', 'deleteImage', 'addImage', 'getProductDetails', 'getAllProductDetails', 'updateSlotById', 'updateSlotStatus', 'deleteSlotById', 'addSingleSlotByProductId', 'updateProductStatus', 'deleteProduct', 'updateProductDetails', 'searchProducts', 'popularProducts', 'latestProducts','addProductCategory','getAllCategories','getAllProductsByCategories','editProductCategory','deleteProductCategory'];
     const isEmptyPermissionTable = await isTableEmpty("permission", connection);
     if (isEmptyPermissionTable) {
       await insertDefaultPermissions(permissionNames);
@@ -186,7 +186,7 @@ async function insertDefaultPermissions(permissionNames) {
 
 async function insertDefaultRolePermissions() {
   try {
-    await Role.insertRolePermission(1,[1,2,3,4,5,6,7,8,9,10,13,14,15,16,17,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44]); //admin permissions
+    await Role.insertRolePermission(1,[1,2,3,4,5,6,7,8,9,10,13,14,15,16,17,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46]); //admin permissions
     await Role.insertRolePermission(2,[13,14,15,16,17,18,19,20,21,22,23,30,31,39,40,41,43,44]); // user  permissions
   } catch (error) {
     console.error(`Error inserting default role permissions: ${error.message}`);
@@ -196,11 +196,16 @@ async function insertDefaultRolePermissions() {
 
 async function insertDefaultBookingCategories(connection) {
   try {
-    const categoryQueries = [
-      `INSERT INTO booking_category (booking_category_name, isSelected) VALUES (?, false)`,
-      `INSERT INTO booking_category (booking_category_name, isSelected) VALUES (?, false)`
-    ];
-    await Promise.all(categoryQueries.map(query => connection.execute(query, ['slot', 'dayWise'])));
+    // const categoryQueries = [
+    //   `INSERT INTO booking_category (booking_category_name, isSelected) VALUES (?, false)`,
+    //   `INSERT INTO booking_category (booking_category_name, isSelected) VALUES (?, false)`
+    // ];
+    // await Promise.all(categoryQueries.map(query => connection.execute(query, ['slot', 'dayWise'])));
+    const query = `INSERT INTO booking_category (booking_category_name, isSelected) VALUES (?, false)`;
+    let categories = ['slotwise', 'daywise'];
+    for(let i=0; i<categories.length; i++) {
+      await executeQuery(query, [categories[i]]);
+    }
   } catch (error) {
     console.error(`Error inserting default booking categories: ${error.message}`);
     throw error;

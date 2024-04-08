@@ -321,14 +321,14 @@ const userController = {
   //get user profile
   userGetProfile: async (req, res) => {
     try {
-      const result = await User.findUserById(req.user.userId);
+      const response = await User.findUserById(req.user.userId);
       //delete  password from the response object to prevent security leaks
-      delete result.password;
+      delete response.password;
       // console.log(result);
-      if (!result) {
+      if (!response) {
         return res.status(404).json({ msg: "User Not Found", Status: false });
       }
-      return res.status(200).json({ result, msg: "Successfull", Status: true });
+      return res.status(200).json({ response, msg: "Successfull", Status: true });
     } catch (error) {
       return res.status(500).json({ msg: error.message || error, Status: false });
     }
