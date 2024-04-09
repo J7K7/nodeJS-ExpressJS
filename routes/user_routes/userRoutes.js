@@ -11,5 +11,6 @@ router.put("/updateProfile", auth, upload , userController.userUpdateProfile)
 router.delete('/deleteProfile', auth,  userController.userDeleteAccount)
 router.put('/updatePassword', auth, registerValidation,  userController.updatePassword)
 router.put('/updateProfilePicture', auth, upload, userController.updateProfilePicture)
+router.get('/getBusinessCategory', auth, userController.getBusinessCategory);
 
 module.exports = router;

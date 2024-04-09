@@ -15,5 +15,7 @@ router.put('/updateUserRole', auth, userController.updateUserRole)
 router.put('/updateRolePermission', auth, userController.updateRolePermission)
 router.get('/displayUserRole', auth, userController.displayAllUserRole)
 router.get('/displayRolesWithPermission', auth, userController.displayRolesWithPermission)
+router.get('/getAllBusinessCategories',auth, userController.getAllBusinessCategories)
+router.post('/selectBusinessCategory',auth, userController.selectBusinessCategory)
 
 module.exports = router

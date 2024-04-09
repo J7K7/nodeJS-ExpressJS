@@ -4,7 +4,7 @@ const { validationResult } = require("express-validator");
 const { compare, hash } = require("bcrypt");
 const fs = require( "fs" );
 const { checkPermissionIds } = require("../../common/userQueries");
-const { removeImageFile } = require("../../common/common");
+const { removeImageFile, getAllCategory, selectCategoryById,getSelectedCategory } = require("../../common/common");
 
 const userController = {
   //normal user registration controller 
@@ -689,6 +689,70 @@ const userController = {
         msg: error.message || error,
         Status:false
       })
+    }
+  },
+
+  getAllBusinessCategories: async (req,res) => {
+    try {
+      const categories = await getAllCategory();
+      if(!categories){
+        return res.status(404).send({msg:'No Category Found', Status: false});
+      }
+      return res.status(200).send({response: categories , msg : "All Categories" ,Status:true})
+    } catch (error) {
+      console.log(error);
+      return res.status(500).send({Status: false, msg : error.message || error})
+    }
+  },
+
+  selectBusinessCategory : async(req, res) => {
+    try {
+      let { bookingCategoryId } = req.body;
+      if ( !bookingCategoryId) {
+        return res
+          .status(400)
+          .json({ msg: "Please provide all fields", Status: false });
+      }
+      //roleId should be integer
+      if  (isNaN(parseInt(bookingCategoryId))) {
+        return res.status(400).send({
+          msg: "Invalid Data provided for bookingCategoryId ",
+          Status: false,
+        });
+      }
+      bookingCategoryId =  parseInt(bookingCategoryId);
+      const categoryDetails = await selectCategoryById(bookingCategoryId);
+      if (!categoryDetails) {
+        return res.status(406).send({
+          msg: `Cannot Process Request`,
+          Status: false,
+        });
+      }else if(categoryDetails && categoryDetails.affectedRows < 1){
+        return res.status(406).send({
+          msg:"Provided Booking Category Id Doesn't Exist.",
+          Status:false
+        })
+      }
+      return res.status(200).send({
+        msg: "Updated successfully",
+        Status: true,
+      })
+    } catch (error) {
+      console.log("Error in Select Category", error);
+      return res.status(500).send({ Status: false, msg: error.message || error});
+    }
+  },
+
+  getBusinessCategory: async (req, res) => {
+    try {
+      const selectedCategory = await getSelectedCategory();
+      if(!selectedCategory){
+        return  res.status(404).send({msg:'No Business Category Selected',Status:false})
+      } 
+      return  res.status(200).send({response: selectedCategory , msg : "successfull", Status : true});
+    } catch (error) {
+      console.log('Error In Fetching Business Category Details ', error);
+      return res.status(500).send({ Status: false, msg: error.message || error});
     }
   }
 };

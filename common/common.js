@@ -1,6 +1,7 @@
 const fs = require( 'fs' );
 const ProductAllDetails = require('../models/product_model/productAllDetails');
 const moment = require("moment");
+const { executeQuery } = require('../db/connection');
 
 // This is generalProductDetails Query this is used for getting productDetails from different Tables so for apply different codition you can use this query.
 // use below name pm for productmaster etc.. 
@@ -138,4 +139,55 @@ const removeImageFile = (newFilename, oldFilename) => {
     }
 }
 
-module.exports = {removeImageFile,organizeProductDetails,organizeProductDetailsMap,generalProductDetailsQuery};
+const getAllCategory = async () => {
+    try {
+        const query =  'SELECT bookingCategoryId, booking_category_name FROM booking_category';
+        const result = await executeQuery(query,[]);
+        if (result.length < 1) {
+            // console.log("error occulered in query", error)
+            throw Error("No Category Found!");
+        }
+        return  result;
+    } catch (error) {
+        console.log(error);
+        throw error;
+    }
+}
+
+const selectCategoryById = async (bookingCategoryId) =>{
+    try {
+        //if count of isSelected is greater or equal to one then dont let it update
+        let query = 'select count(isSelected) as count from booking_category where isSelected = 1'
+        let count = await executeQuery(query);
+        // console.log(count[0].count);
+        if(count[0].count >= 1){
+            return;
+        }
+        query =   'update booking_category set isSelected = true where bookingCategoryId = ?'
+        let params = [bookingCategoryId];
+        const result = await executeQuery(query,params);
+        if (result.affectedRows < 1 ) {
+            throw Error(`Unable to Update`);
+        }
+        return result;
+    } catch (error) {
+        console.log(error);
+        throw error;
+    }
+}
+
+const getSelectedCategory = async () => {
+    try {
+        let query = 'select bookingCategoryId, booking_category_name from booking_category where isSelected = 1'
+        const result = await executeQuery(query);
+        if(!result || result.length <= 0 ){
+            return
+        }else{
+            return result[0]
+        }
+    } catch (error) {
+        
+    }
+}
+
+module.exports = {removeImageFile,organizeProductDetails,organizeProductDetailsMap,generalProductDetailsQuery, getAllCategory, selectCategoryById, getSelectedCategory};
