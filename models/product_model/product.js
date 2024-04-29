@@ -475,6 +475,9 @@ class Product {
       await Promise.all(relationPromises);
       return true; 
       */
+      if(featureIds.length==0){
+        throw new Error(`No Feature Is Provided Please Provide atleast one feature`);
+      }
 
       // Create an array of relation values by using flatMap to map each featureId to an array containing both the productId and the featureId.
       // This effectively creates pairs of (productId, featureId) for each featureId.
@@ -555,6 +558,7 @@ class Product {
 
       // Execute the bulk insert query with the linkValues array, which contains the flattened pairs of (productId, imageId).
       const result = await executeQuery(bulkInsertQuery, linkValues);
+      console.log(result.length);
 
       return true; // Successfully linked images with the product
     } catch (error) {

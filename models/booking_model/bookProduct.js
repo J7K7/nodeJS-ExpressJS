@@ -70,17 +70,35 @@ class BookProduct {
     }
   }
 
-  async checkItemInCart(currentBookingId, productId, slotId, connection) {
-    const checkItemQuery = `
+  async checkItemInCart(currentBookingId, productId, slotId = null, connection) {
+    var checkItemQuery;
+
+    try {
+      var result;
+      if (slotId != null) {
+        // Catgeory Id : 1
+        checkItemQuery = `
             SELECT quantity FROM bookproduct
             WHERE bookingId = ? AND productId = ? AND slotId = ?;
         `;
-    try {
-      const [result] = await connection.execute(checkItemQuery, [
-        currentBookingId,
-        productId,
-        slotId,
-      ]);
+
+        [result] = await connection.execute(checkItemQuery, [
+          currentBookingId,
+          productId,
+          slotId,
+        ]);
+      } else {
+        // Catgeory Id : 2
+        checkItemQuery = `
+            SELECT quantity FROM bookproduct
+            WHERE bookingId = ? AND productId = ?;
+        `;
+
+        [result] = await connection.execute(checkItemQuery, [
+          currentBookingId,
+          productId
+        ]);
+      }
 
       if (result.length == 0) return { itemExists: false };
       return {
@@ -212,22 +230,39 @@ class BookProduct {
     connection,
     currentBookingId,
     productId,
-    slotId
+    slotId = null
   ) {
     let result = null;
     try {
-      if (currentQuantity <= 1) {
-        // If quantity is 1, remove the item from the cart
-        const deleteItemQuery = `
-                  DELETE FROM bookproduct
-                  WHERE bookingId = ? AND productId = ? AND slotId = ?;
-              `;
-        result = await connection.execute(deleteItemQuery, [
-          currentBookingId,
-          productId,
-          slotId,
-        ]);
-      }
+
+      console.log("currentQuantity : ")
+      console.log(currentQuantity);
+      // if (currentQuantity <= 1) {
+        if (slotId != null) {
+          // If quantity is 1, remove the item from the cart
+          const deleteItemQuery = `
+              DELETE FROM bookproduct
+              WHERE bookingId = ? AND productId = ? AND slotId = ?;
+          `;
+          result = await connection.execute(deleteItemQuery, [
+            currentBookingId,
+            productId,
+            slotId,
+          ]);
+        } else {
+          // If quantity is 1, remove the item from the cart
+          const deleteItemQuery = `
+            DELETE FROM bookproduct
+            WHERE bookingId = ? AND productId = ?;
+        `;
+          result = await connection.execute(deleteItemQuery, [
+            currentBookingId,
+            productId
+          ]);
+        }
+      // }
+
+      console.log("RESULT INSIDE REMOVEFROMCART" , result)
     } catch (err) {
       throw new Error("Error removing cart items", err);
     }

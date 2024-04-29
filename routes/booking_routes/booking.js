@@ -39,7 +39,7 @@ router.post('/addToCart' , auth, cartController.addToCart)
  *          - productId 
  *          - slotId
  */
-router.post('/removeFromCart', auth , cartController.removefromCart)
+router.post('/removeFromCart', auth , cartController.removeProductFromCart)
 
 /**
  * @description Place an order with the products in the cart 

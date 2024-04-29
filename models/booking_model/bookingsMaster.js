@@ -148,13 +148,38 @@ class BookingsMaster {
   }
 
   async getCartItems(bookingId) {
-    const getCartItemsQuery = `            
-    SELECT b.bookingId,
-    p.productId, pm.productName , p.quantity, p.slotId, p.slotFromDateTime, p.slotToDateTime, p.price, b.grandTotal
+    // const getCartItemsQuery = `            
+    // SELECT b.bookingId,
+    // p.productId, pm.productName , p.quantity, p.slotId, p.slotFromDateTime, p.slotToDateTime, p.price, b.grandTotal
+    // FROM bookingsmaster b
+    // JOIN bookProduct p ON b.bookingId = p.bookingId
+    // JOIN productmaster pm ON p.productId = pm.productId
+    // WHERE p.bookingId = ?;`;
+
+    const getCartItemsQuery = `
+    SELECT DISTINCT b.bookingId,
+           p.productId, 
+           b.booking_fromDatetime as checkInDate, 
+           b.booking_toDatetime checkOutDate, 
+           pm.productName,
+           (
+             SELECT pi.imagePath
+             FROM productimage_relation pir
+             JOIN productimages pi ON pir.imageId = pi.imageId
+             WHERE pir.productId = p.productId 
+             ORDER BY pi.timestamp ASC
+             LIMIT 1
+           ) AS productImage,
+           p.quantity, 
+           p.slotId, 
+           p.slotFromDateTime, 
+           p.slotToDateTime, 
+           p.price, 
+           b.grandTotal
     FROM bookingsmaster b
     JOIN bookProduct p ON b.bookingId = p.bookingId
     JOIN productmaster pm ON p.productId = pm.productId
-    WHERE p.bookingId = ?;`;
+    WHERE p.bookingId = ?`;
 
     try {
       const cartItems = await executeQuery(getCartItemsQuery, [bookingId]);
@@ -359,26 +384,50 @@ SET bm.grandTotal =(SELECT SUM(price*quantity)
         // VALIDATION : the booking_fromDatetime should be greater then the currentDate time then only the user can book the slot
 
         // Get the current date time
-        const currentDate = moment().format("YYYY-MM-DD");
-        // Extract the date part from booking_fromDatetime
-        let currentbooking_fromDate = moment(
-          currentbooking_fromDatetime
-        ).format("YYYY-MM-DD");
+        // const currentDate = moment().format("YYYY-MM-DD");
+        // // Extract the date part from booking_fromDatetime
+        // let currentbooking_fromDate = moment(
+        //   currentbooking_fromDatetime
+        // ).format("YYYY-MM-DD");
+        // console.log("Current Booking From Date: ", currentbooking_fromDate)
+        // console.log("Current  Date: ", currentDate)
+        // // Check if the booking_fromDatetime is before the current date time
+        // if (moment(currentbooking_fromDate).isBefore(currentDate)) {
+        //   // The booking date should be greater than the current datetime.
+        //   throw new Error("Select an appropriate date the can be fullfilled.");
+        // }
 
-        // Check if the booking_fromDatetime is before the current date time
-        if (moment(currentbooking_fromDate).isBefore(currentDate)) {
-          // The booking date should be greater than the current datetime.
-          throw new Error("Select an appropriate date the can be fullfilled.");
-        }
+        const findExistingBookingDatesQuery = `
+            SELECT booking_fromDatetime FROM bookingsmaster WHERE bookingId = ?
+        `;
 
-        if (bookingFromDate !== currentbooking_fromDate) {
+        const [existingBookingDates] = await connection.execute(
+          findExistingBookingDatesQuery,
+          [currentBookingId]
+        );
+
+        console.log("SLOT MATE NI EXISTING BOOKIG FROM DATE IS--------------")
+        console.log(existingBookingDates);
+
+        // if (bookingFromDate !== currentbooking_fromDate) {
+        //   throw new Error(
+        //     "At a time, you can book products with the same Date."
+        //   );
+        // }
+
+        if (
+          moment(existingBookingDates[0].booking_fromDatetime).format("YYYY-MM-DD") !=
+          moment(bookingFromDate).format("YYYY-MM-DD")
+        ) {
           throw new Error(
-            "At a time , you can book products with the same Date."
+            "At a time, you can book products with the same Date."
           );
         }
       }
 
       if (bookingCategoryId == 2) {
+
+
         // VALIDATION : User is only allowed to book multiple products with the same booking_fromDatetime & booking_toDatetime
         const findExistingBookingDatesQuery = `
         SELECT booking_fromDatetime, booking_toDatetime FROM bookingsmaster WHERE bookingId = ?
@@ -389,24 +438,36 @@ SET bm.grandTotal =(SELECT SUM(price*quantity)
           [currentBookingId]
         );
 
+
+        console.log("Existing booking dates in the DB : ", moment(existingBookingDates[0].booking_fromDatetime).format(
+          "YYYY-MM-DD"
+        ));
+        console.log("Existing booking dates in the DB : ", moment(existingBookingDates[0].booking_toDatetime).format(
+          "YYYY-MM-DD"
+        ));
+        console.log("Current booking dates -- that the user is trying to add : ", currentbooking_fromDatetime, moment(currentbooking_toDatetime).add(1, 'day').format("YYYY-MM-DD"))
+        console.log("Current Booking Id : ", currentBookingId)
+
         if (
-          moment(existingBookingDates[0].booking_fromDatetime).format(
-            "YYYY-MM-DD"
-          ) !== moment(currentbooking_fromDatetime).format("YYYY-MM-DD") ||
-          moment(existingBookingDates[0].booking_toDatetime).format(
-            "YYYY-MM-DD"
-          ) !== moment(currentbooking_toDatetime).format("YYYY-MM-DD")
+          moment(existingBookingDates[0].booking_fromDatetime).format("YYYY-MM-DD") !=
+          moment(currentbooking_fromDatetime).format("YYYY-MM-DD") ||
+          moment(existingBookingDates[0].booking_toDatetime).format("YYYY-MM-DD") !=
+          moment(currentbooking_toDatetime).add(1, 'day').format("YYYY-MM-DD")
         ) {
+
+          console.log("ERROR J NA AVI")
           throw new Error(
             "You cannot add Products to cart that differ in Booking From Date & Booking To Date"
           );
         }
+
+        console.log("IF ni bar avi gyu without error")
       }
     } catch (err) {
-      throw new Error("Error validating booking Dates" + err);
+      // throw new Error("Error validating booking Dates" + err);
+      throw (err);
     }
   }
-
   async checkAndHandleCancelledStatus(connection, bookingId) {
     try {
       const [checkStatus] = await connection.execute(
@@ -591,7 +652,8 @@ SET bm.grandTotal =(SELECT SUM(price*quantity)
                 SET bm.statusId = ?,
                     bm.cancel_message = ?,
                     sm.slotBooked = sm.slotBooked - bp.quantity,
-                    sm.slotActive=1
+                    sm.slotActive=1,
+                    bm.timestamp = NOW()
                 WHERE bm.bookingId = ?
               `;
 

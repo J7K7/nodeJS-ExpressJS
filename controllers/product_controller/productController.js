@@ -29,6 +29,9 @@ const ProductCategory = require("../../models/product_model/category");
 
 const ProductController = {
   addProduct: async (req, res) => {
+    console.log("Inside Controller ");
+    console.log(req.body);
+    console.log(req.files);
     try {
       const {
         productName,
@@ -451,6 +454,48 @@ const ProductController = {
       });
     }
   },
+  getSlotsByDateAndProductId:async (req,res)=>{
+    // For fetching the slots for particular product and slotdate
+    try {
+      const productId = req.query.productId; // Default to empty string if not provided
+      const slotDate = req.query.slotDate;
+      if(!productId || !slotDate){
+        return res.status(400).json({
+          Status: false,
+          msg: "Please provide the All the required Query Params",
+        });
+      }
+      if (!isValidSqlDateFormat(slotDate)) {
+        return res.status(400).json({
+          Status: false,
+          msg: "Invalid date format. Please use YYYY-MM-DD or enter a valid date.",
+        });
+      }
+      if (!Number.isInteger(Number(productId)) || Number(productId) <= 0) {
+        return res.status(400).json({
+          Status: false,
+          msg: "Invalid product ID. Please provide a positive integer.",
+        });
+      }
+      console.log(productId,slotDate);
+      const slotsData=await Slot.getSlotsByDateAndProductId(slotDate,productId);
+      // In this section you can add the logic for handling the timezone according to the server and user.
+      // For now we are assuming that both the server and client is using same timezone.
+      slotsData.forEach(slot => {
+        slot.slotDate = moment(slot.slotDate).format("YYYY-MM-DD");
+        slot.slotFromDateTime = moment(slot.slotFromDateTime).format('YYYY-MM-DD HH:mm:ss');
+        slot.slotToDateTime = moment(slot.slotToDateTime).format('YYYY-MM-DD HH:mm:ss');
+      });
+      
+      res.status(200).json({ Status: true, slotsData: slotsData });
+    } catch (error) {
+      console.error("Error fetching product slots:", error);
+      return res.status(500).json({
+        Status: false,
+        msg: "Internal server error: " + error.message,
+      });
+    }
+  },
   updateProductStatusById: async (req, res) => {
     // For updating the status of the  product by id.
     const productId = req.params.id;
@@ -573,7 +618,7 @@ const ProductController = {
       // Check if at least one field is provided
       if (!name || !description) {
         return res.status(400).json({
-          Staus: false,
+          Status: false,
           msg: "Plaese Provide The feature name And description for feature Update",
         });
       }
@@ -585,7 +630,7 @@ const ProductController = {
 
       res
         .status(200)
-        .json({ Status: true, message: "Feature updated successfully" });
+        .json({ Status: true, msg: "Feature updated successfully" });
     } catch (error) {
       if (error.message.includes("error is not defined")) {
         console.error("Error in Updating Invalid Feature Id", error);
@@ -601,6 +646,7 @@ const ProductController = {
     }
   },
   addFeature: async (req, res) => {
+    console.log(req.body);
     try {
       const { featureData, productId } = req.body;
       // console.log(req.body);
@@ -946,6 +992,7 @@ const ProductController = {
     }
   },
   updateProductDetails: async (req, res) => {
+    console.log(req.body)
     try {
       // console.log(req.params['productId']);
       const {

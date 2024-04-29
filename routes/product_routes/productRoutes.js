@@ -83,6 +83,8 @@ router.put('/updateSlotById/:id',auth, ProductController.updateSlotById);
 
 // router.get('/getProductDetails/:id',ProductController.getProductDetailsById );
 
+router.get('/getSlotsByDateAndProductId',ProductController.getSlotsByDateAndProductId);
+
 router.put('/updateSlotStatus/:id',auth, ProductController.updateSlotStatusById );
 
 router.delete('/deleteSlotById/:id',auth, ProductController.deleteSlotById );

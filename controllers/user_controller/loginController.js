@@ -35,7 +35,7 @@ const loginController = {
           let token = await jwt.sign(
             { userId: result.userId, roleId: roleData.roleId },
             process.env.SECRET_KEY,
-            { expiresIn: "2d" }
+            { expiresIn: "10d" }
           );
     
           if (token === null) {

@@ -127,13 +127,13 @@ const BookingController = {
 
             await connection.commit();
 
-            return res.status(200).json({ Status: true, message: `Order Placed Successfully. Booking Id : ${bookingId}` });
+            return res.status(200).json({ Status: true, msg: `Order Placed Successfully. Booking Id : ${bookingId}` });
 
         } catch (err) {
 
             await connection.rollback();
             // await BookingsMaster.updateStatusAndCancelMessage(connection, bookingId, 6, 'Error Confirming the booking order');
-            return res.status(400).json({ Status: false, message: `Error Confirming the booking order: ${err}` });
+            return res.status(400).json({ Status: false, msg: `Error Confirming the booking order: ${err}` });
         } finally {
             connection.release();
         }

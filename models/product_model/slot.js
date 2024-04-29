@@ -166,6 +166,17 @@ class Slot {
       throw new Error(`Error fetching slot by ID: ${error.message}`);
     }
   }
+  // This function give the active slots for  a particular product id and slotdate
+  static async getSlotsByDateAndProductId(date, productId) {
+    try {
+      const query = `SELECT sm.slotId, slotDate, slotFromDateTime, slotToDateTime, slotOriginalCapacity, slotPrice, slotActive, slotBooked FROM slotmaster as sm INNER JOIN slotproduct_relation spr ON sm.slotId = spr.slotId WHERE sm.slotDate=? AND spr.productId=? AND sm.slotActive=1 `;
+      const results = await executeQuery(query, [date, productId]);
+      console.log(results)
+      return results;
+    } catch (error) {
+      throw new Error(`Error fetching slots by Date and ProductId: ${error.message}`);
+    }
+  }
   // Find the productId associated with a given slotId.
   static async findProductIdBySlotId(slotId) {
     try {
