@@ -212,6 +212,31 @@ class BookingsMaster {
     }
   }
 
+  async updateBookingDatesWhileRemovingproductFromCart(currentBookingId, connection) {
+    // fetch all slot from dates times of the current booking Id from the bookProduct table 
+    const sql = `
+        SELECT MAX(slotToDateTime) AS maxSlotToDateTime, MIN(slotFromDateTime) AS minSlotFromDateTime 
+        FROM bookproduct 
+        WHERE bookingId = ?;
+    `;
+
+    const result = await connection.execute(sql, [
+      currentBookingId,
+    ]);
+
+    // If there ar no entrie sleft in the bookProduct table then no nee dto update teh dastes --- hence return directly : 
+
+    if (result[0][0].length == 0) {
+      return { updatedbooking_fromDatetime: null, updatedbooking_toDatetime: null };
+    }
+
+    // console.log("Result : " , result[0][0]);
+
+    return {updatedbooking_fromDatetime : result[0][0].minSlotFromDateTime , updatedbooking_toDatetime : result[0][0].maxSlotToDateTime};
+
+  }
+
+
   async updateGrandTotalAndDates(
     connection,
     currentBookingId,

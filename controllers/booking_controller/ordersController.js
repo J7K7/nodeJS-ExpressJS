@@ -68,7 +68,7 @@ const ordersController = {
             ordersData.forEach(data => {
                 // Check if the order already exists, if not create a new one
                 if (!orders[data.bookingId]) {
-                    console.log(data.timestamp);
+                    // console.log(data.timestamp);
                     orders[data.bookingId] = new Order(
                         data.bookingId,
                         data.bookingDate,

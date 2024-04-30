@@ -42,6 +42,13 @@ router.post('/addToCart' , auth, cartController.addToCart)
 router.post('/removeFromCart', auth , cartController.removeProductFromCart)
 
 /**
+ * @description Clear the cart completely : REMOVE all products from the cart 
+ * @method DELETE /booking/clearCart
+ *          
+ */
+router.delete('/clearCart' , cartController.clearCart)
+
+/**
  * @description Place an order with the products in the cart 
  * @method POST /booking/confirmBooking
  * @input Requires the request body to be URL encoded

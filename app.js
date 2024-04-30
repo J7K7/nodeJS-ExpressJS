@@ -32,6 +32,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 // console.log(path.join(__dirname, 'public', 'images','product'));
 app.use('/images/', express.static(path.join(__dirname, 'public', 'images','product')));
+app.use('/userImages/', express.static(path.join(__dirname, 'public', 'images','user')));
 app.use('/', loginRoute)
 app.use('/user', userRoutes)
 app.use('/admin', adminRoutes)

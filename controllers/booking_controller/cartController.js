@@ -467,12 +467,12 @@ const cartController = {
     // const userId = req.user.userId;
 
     try {
-      console.log("bookingCategoryId : ", bookingCategoryId)
+      // console.log("bookingCategoryId : ", bookingCategoryId)
       // const { productId, slotId } = req.body;
       if (bookingCategoryId == 1) {
 
-        console.log("SlotId is : ")
-        console.log(slotId)
+        // console.log("SlotId is : ")
+        // console.log(slotId)
         // Slot -- REQUIRED FIELDS TO REMOVE THE PRODUCT : PRODUCTID - SLOtID
         if (!productId || !slotId) {
           throw ("Product & slot is required");
@@ -487,13 +487,13 @@ const cartController = {
 
       let BookingMaster = new BookingsMaster();
 
-      console.log("UserId", userId)
+      // console.log("UserId", userId)
       let currentBookingId = await BookingMaster.checkIfCartExists(
         userId,
         connection
       );
 
-      console.log("currentBookingId : ", currentBookingId);
+      // console.log("currentBookingId : ", currentBookingId);
       if (currentBookingId == null) {
         throw ("Cart is empty")
       }
@@ -507,8 +507,8 @@ const cartController = {
           connection
         );
 
-      console.log("itemExists", itemExists);
-      console.log("currentQuantity", currentQuantity);
+      // console.log("itemExists", itemExists);
+      // console.log("currentQuantity", currentQuantity);
 
 
 
@@ -525,10 +525,20 @@ const cartController = {
         slotId
       );
 
-      console.log("XYZ");
-      console.log(xyz);
+        // Update boooking dates when truying to remove product from the cart ---- 
 
-      console.log("removeCartItem DONE");
+        let {updatedbooking_fromDatetime  , updatedbooking_toDatetime} = await BookingMaster.updateBookingDatesWhileRemovingproductFromCart(currentBookingId , connection);
+
+        if(updatedbooking_fromDatetime != null && updatedbooking_toDatetime != null){
+          // Update grand total of the Cart & dates
+          await BookingMaster.updateGrandTotalAndDates(
+            connection,
+            currentBookingId,
+            updatedbooking_fromDatetime,
+            updatedbooking_toDatetime
+          );
+        }
+  
 
       // Delete the cart entry from bookingsmaster if all the items are removed from cart
       await BookingMaster.deleteCartEntryIfEmpty(currentBookingId, connection);
@@ -598,6 +608,58 @@ const cartController = {
     }
 
   },
+
+  clearCart: async (req, res) => {
+
+    // let userId = req.user.userId;
+    let userId = 826;
+    let bookingCategoryId = req.body.bookingCategoryId;
+
+    // Start a transaction
+    const connection = await createPool();
+    await connection.beginTransaction();
+
+    try {
+      // find the products in the cart for currnet booking Id (IF THE CART EXISTS)
+
+      let BookingMaster = new BookingsMaster();
+
+      let currentBookingId = await BookingMaster.checkIfCartExists(
+        userId
+      );
+
+      if (currentBookingId == null) {
+        return res.status(400).json({ Status: false, msg: 'Cart is EMPTY' });
+      }
+
+      let cartItems = await BookingMaster.getCartItems(currentBookingId);
+      // console.log("cartItems : ", cartItems);
+      cartItems.forEach(async (item) => {
+        let { productId } = item;
+
+        if (bookingCategoryId == 1) {
+          let { slotId } = item;
+          // await cartController.removeProductFromCart(bookingCategoryId, productId, slotId);
+          await cartController.removefromCart(bookingCategoryId, productId, slotId, userId , connection)
+        } else if (bookingCategoryId == 2) {
+          // await cartController.removeProductFromCart(bookingCategoryId, productId, null);
+          await cartController.removefromCart(bookingCategoryId, productId, null, userId , connection)
+
+        }
+      })
+
+      connection.commit();
+      return res.status(200).json({ Status: true, msg: 'All products removed from Cart Successfully.' });
+
+      // remove all the products found from teh cart --- call remove product from teh cart function for it 
+    } catch (err) {
+      console.log(err);
+      connection.rollback();
+      return res.status(400).json({ Status: false, msg: 'Error removing all products from the cart' });
+    }
+
+  },
+
 
   // // View all items in the cart
   viewCart: async (req, res) => {
