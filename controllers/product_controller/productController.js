@@ -838,11 +838,11 @@ const ProductController = {
     try {
       // Check if required parameters are provided and apply slotValidations
       const slotData = {
-        date: slotDate,
-        price: slotPrice,
-        capacity: slotOriginalCapacity,
-        fromTime: slotFromDateTime,
-        toTime: slotToDateTime,
+        slotDate,
+        slotPrice,
+        slotOriginalCapacity,
+        slotFromDateTime,
+        slotToDateTime,
       };
       // passing slotData in array form beacause slot validation take slotData in array form  only
       const slotValidationResult = slotValidation(
@@ -900,10 +900,10 @@ const ProductController = {
     try {
       // Check if required parameters are provided and apply slotValidations
       const slotData = {
-        price: slotPrice,
-        capacity: slotOriginalCapacity,
-        fromTime: slotFromDateTime,
-        toTime: slotToDateTime,
+        slotPrice,
+        slotOriginalCapacity,
+        slotFromDateTime,
+        slotToDateTime,
       };
       // passing slotData in array form beacause slot validation take slotData in array form  only
       const slotValidationResult = slotValidation(

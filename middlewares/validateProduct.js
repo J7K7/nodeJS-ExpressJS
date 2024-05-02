@@ -71,11 +71,11 @@ const validateProduct = (req, res, next) => {
         return res.status(400).json({ Status: false, msg: 'Invalid slotData. In DayWise Booking Category per Day contain only one slot' });
   }
   for (const slot of parsedSlotData) {
-    if (!slot.fromTime || !slot.toTime || !slot.capacity || !slot.price) {
+    if (!slot.slotFromDateTime || !slot.slotToDateTime || !slot.slotOriginalCapacity || !slot.slotPrice) {
         return res.status(400).json({ Status: false, msg: 'Invalid slotData. Missing required fields.' });
     }
-    let fromTime = moment(slot.fromTime,'HH:mm');
-    let toTime = moment(slot.toTime,'HH:mm')
+    let fromTime = moment(slot.slotFromDateTime,'HH:mm');
+    let toTime = moment(slot.slotToDateTime,'HH:mm')
     fromTime=fromTime.format('HH:mm');
     toTime=toTime.format('HH:mm');
     if (bookingCategoryId==='slot' && fromTime>=toTime) {

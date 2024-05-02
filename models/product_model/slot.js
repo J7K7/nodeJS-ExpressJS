@@ -58,14 +58,14 @@ class Slot {
     try {
         if (bookingCategoryId == 1) {
             for (const slotInfo of parsedSlotData) {
-                const { fromTime, toTime, capacity, price } = slotInfo;
+              const { slotFromDateTime, slotToDateTime, slotOriginalCapacity, slotPrice } = slotInfo;
                 const slotActive = 1;
                 const slot = new Slot(
                     currentDate.format("YYYY-MM-DD"),
-                    combineDateTime(currentDate, fromTime),
-                    combineDateTime(currentDate, toTime),
-                    capacity,
-                    price,
+                    combineDateTime(currentDate, slotFromDateTime),
+                    combineDateTime(currentDate, slotToDateTime),
+                    slotOriginalCapacity,
+                    slotPrice,
                     slotActive
                 );
 
@@ -77,17 +77,17 @@ class Slot {
                 }
             }
         } else if (bookingCategoryId == 2) {
-            const { fromTime, toTime, capacity, price } = parsedSlotData[0];
+          const { slotFromDateTime, slotToDateTime, slotOriginalCapacity, slotPrice } = parsedSlotData[0];
             const slotActive = 1;
-            const checkInTime = combineDateTime(currentDate, fromTime);
+            const checkInTime = combineDateTime(currentDate, slotFromDateTime);
             const nextDayDate = moment(currentDate).add(1, "day");
-            const checkOutTime = combineDateTime(nextDayDate, toTime);
+            const checkOutTime = combineDateTime(nextDayDate, slotToDateTime);
             const singleDaySlot = new Slot(
                 currentDate.format("YYYY-MM-DD"),
                 checkInTime,
                 checkOutTime,
-                capacity,
-                price,
+                slotOriginalCapacity,
+                slotPrice,
                 slotActive
             );
 
@@ -110,10 +110,10 @@ class Slot {
   static async addSingleSlotByProductId(productId,slotData){
     try {
      //Combine Date and Time for convertin into "YYYY-MM-DD HH:MM:SS"
-      const slotFromDateTime = combineDateTime(slotData.date, slotData.fromTime);
-      const slotToDateTime = combineDateTime(slotData.date,slotData.toTime);
+     const slotFromDateTime = combineDateTime(slotData.slotDate, slotData.slotFromDateTime);
+     const slotToDateTime = combineDateTime(slotData.slotDate,slotData.slotToDateTime);
   
-      const newSlot= new Slot(slotData.date,slotFromDateTime,slotToDateTime,slotData.capacity,slotData.price,1);//Setting slotDetails
+     const newSlot= new Slot(slotData.slotDate,slotFromDateTime,slotToDateTime,slotData.slotOriginalCapacity,slotData.slotPrice,1);//Setting slotDetails
       const slotId = await newSlot.addSlot();
       if(!slotId){
         throw new Error ( "Failed to create Slot");
@@ -230,7 +230,7 @@ class Slot {
 
   // Function For updating particular slot details using its id
   static async updateSlotById(slotId, newSlotDetails, bookingCategoryId) {
-    const { fromTime, toTime, capacity, price } = newSlotDetails;
+    const { slotFromDateTime, slotToDateTime, slotOriginalCapacity, slotPrice } = newSlotDetails;
     try {
       let result = await this.getSlotById(slotId , null);
       const slotBooked = result.slotBooked;
@@ -238,7 +238,7 @@ class Slot {
       // If so, it indicates that there are booked slots exceeding the updated capacity,
       // which is not allowed as it would result in overbooking.
       // console.log(slotBooked);
-      if (capacity < slotBooked) {
+      if (slotOriginalCapacity < slotBooked) {
         throw new Error(
           "The number of available slots cannot be less than the number of booked slots"
         );
@@ -251,20 +251,20 @@ class Slot {
       `;
       let slotFromDateTime, slotToDateTime;
       if (bookingCategoryId == 1) {
-        slotFromDateTime = combineDateTime(result.slotDate, fromTime);
-        slotToDateTime = combineDateTime(result.slotDate, toTime);
+        slotFromDateTime = combineDateTime(result.slotDate, slotFromDateTime);
+        slotToDateTime = combineDateTime(result.slotDate, slotToDateTime);
       } else if (bookingCategoryId == 2) {
-        slotFromDateTime = combineDateTime(result.slotDate, fromTime);
+        slotFromDateTime = combineDateTime(result.slotDate, slotFromDateTime);
         const nextDayDate = moment(result.slotDate).add(1, "day");
-        slotToDateTime = combineDateTime(nextDayDate, toTime);
+        slotToDateTime = combineDateTime(nextDayDate, slotToDateTime);
       }
 
       // Execute the update query with the new slot details
       result = await executeQuery(updateQuery, [
         slotFromDateTime,
         slotToDateTime,
-        capacity,
-        price,
+        slotOriginalCapacity,
+        slotPrice,
         slotId,
       ]);
 

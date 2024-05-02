@@ -108,14 +108,14 @@ const productDetailsValidation = async (
 const slotValidation = (slotData, bookingCategoryId) => {
   // const parsedSlotData = JSON.parse(slotData);
   for (const slot of slotData) {
-    if (!slot.fromTime || !slot.toTime || !slot.capacity || !slot.price) {
+    if (!slot.slotFromDateTime || !slot.slotToDateTime || !slot.slotOriginalCapacity || !slot.slotPrice) {
       return {
         isValid: false,
         message: "Invalid slotData. Missing required fields.",
       };
     }
-    const fromTime = moment(slot.fromTime, "HH:mm", true);
-    const toTime = moment(slot.toTime, "HH:mm", true);
+    const fromTime = moment(slot.slotFromDateTime, "HH:mm", true);
+    const toTime = moment(slot.slotToDateTime, "HH:mm", true);
     if (!fromTime.isValid() || !toTime.isValid()) {
       return {
         isValid: false,
