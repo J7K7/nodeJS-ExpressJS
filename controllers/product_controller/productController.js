@@ -26,6 +26,7 @@ const {
 } = require("../../common/common");
 const maxImagesPerProduct = process.env.MAX_IMAGES_PER_PRODUCT;
 const ProductCategory = require("../../models/product_model/category");
+const { scheduleProductDeactivation, updateActiveToDate } = require("../../scheduler/productSheduler");
 
 const ProductController = {
   addProduct: async (req, res) => {
@@ -187,7 +188,9 @@ const ProductController = {
           .status(401)
           .send({ Status: false, msg: "Failed to link product with category" });
       }
-
+      // If everything went well, send a success response and set the sheduler for deactivate the product on active to date
+      // Code for sheduling product Deactivation.
+      scheduleProductDeactivation(productId,active_toDate);
       res.status(201).json({
         productId,
         featureRelationResult,
@@ -838,11 +841,11 @@ const ProductController = {
     try {
       // Check if required parameters are provided and apply slotValidations
       const slotData = {
-        slotDate,
-        slotPrice,
-        slotOriginalCapacity,
-        slotFromDateTime,
-        slotToDateTime,
+        date: slotDate,
+        price: slotPrice,
+        capacity: slotOriginalCapacity,
+        fromTime: slotFromDateTime,
+        toTime: slotToDateTime,
       };
       // passing slotData in array form beacause slot validation take slotData in array form  only
       const slotValidationResult = slotValidation(
@@ -900,10 +903,10 @@ const ProductController = {
     try {
       // Check if required parameters are provided and apply slotValidations
       const slotData = {
-        slotPrice,
-        slotOriginalCapacity,
-        slotFromDateTime,
-        slotToDateTime,
+        price: slotPrice,
+        capacity: slotOriginalCapacity,
+        fromTime: slotFromDateTime,
+        toTime: slotToDateTime,
       };
       // passing slotData in array form beacause slot validation take slotData in array form  only
       const slotValidationResult = slotValidation(
@@ -1004,7 +1007,7 @@ const ProductController = {
       } = req.body;
       const productId = req.params.id;
       // console.log(productId);
-      if (!productId || isNaN(parseInt(productId))) throw "Invalid Product ID";
+      if (!productId || isNaN(parseInt(productId)) || isNaN(parseInt(productId))<0) throw "Invalid Product ID";
       if (!productCapacity || !advanceBookingDuration) {
         return res.status(400).json({ msg: "Missing fields!", Status: false });
       }
@@ -1016,9 +1019,15 @@ const ProductController = {
           .status(400)
           .json({ msg: "Fields must be numbers!", Status: false });
       }
-      if (advanceBookingDuration <= 0) {
+      if (advanceBookingDuration <= 0 ) {
         return res.status(400).json({
           msg: "advanceBookingDuration can not be zero  or negative!",
+          Status: false,
+        });
+      }
+      if (advanceBookingDuration > 365 ) {
+        return res.status(400).json({
+          msg: "advanceBookingDuration can Have maximum value 1 year(365 Days)",
           Status: false,
         });
       }
@@ -1065,6 +1074,8 @@ const ProductController = {
           Status: false,
         });
       }
+      // If every Thuing Goes well so we need to reshedule the product's deactivation date also (may be changed)
+      updateActiveToDate(productId,active_toDate);
       return res
         .status(200)
         .json({ msg: "product updated successfully", Status: true });
@@ -1114,7 +1125,7 @@ const ProductController = {
 
       // In this if any ongoing booking is there than we can not cancel it.
       // So for that we comparing the bookingFromDateTime with the current date if it is greater than this than we can delete that bookings.
-
+      // Find all the future confirmed bookings for the given slotId
       const futureConfirmedBookingIds =
         await BookingsMaster.findAllFutureConfirmBookingsBySlotId(slotId);
       if (futureConfirmedBookingIds.length > 0) {
@@ -1130,7 +1141,7 @@ const ProductController = {
       console.log(futureConfirmedBookingIds);
       // Call the deleteSlot method from the SlotMaster class to delete the slot based upon the slot Id that was passed as an argument
       // Delete the Slot from DB
-      // const deletedSlot = await Slot.deleteSlotById(slotId);
+      const deletedSlot = await Slot.deleteSlotById(slotId);
       // Return a success response
       return res.status(200).json({
         Status: true,

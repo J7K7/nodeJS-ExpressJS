@@ -53,6 +53,7 @@ class Slot {
   static async addSingleDateSlot(slotData, currentDate, bookingCategoryId) {
     const slotIds = [];
      // Parse slotData into JSON format
+     if(slotData==null) return slotIds;
     const parsedSlotData = JSON.parse(slotData);
     currentDate=moment(currentDate);
     try {
@@ -279,7 +280,7 @@ class Slot {
       throw error
     }
   }
-  /**
+ /**
    * Deletes the slot from the slotmaster table and sets the slotId to NULL in the bookProduct table
    * Also removing the relation beetween  slot and product.
    * in the bookProduct table for all products associated with the deleted slot.
@@ -287,41 +288,71 @@ class Slot {
    * If a booking is in 'added to cart', 'confirmed', or any other status, its slotId is still set to NULL.
    * @param {number} slotId - The ID of the slot to be deleted.
    */
-  static async deleteSlotById(slotId) {
-    try {
-      //validate that slotId is valid or not 
-      let slotDetails = await this.getSlotById(slotId , null);
-
-      // SQL query to delete the slot from the slotproduct_relation table
-      const deleteRelationQuery = `DELETE FROM slotproduct_relation WHERE slotId = ?`;
-
-      // Execute the query with the slotId as a parameter
-      await executeQuery(deleteRelationQuery, [slotId]);
-
-      // Update slotId to NULL in bookProduct
-      await BookProduct.updateSlotIdToNull(slotId);
-
-      // Now we can safely Delete the slotId from the slotmaster.
-
-      // SQL query to delete the slot from the slotmaster
-      const deleteQuery = `DELETE FROM slotmaster WHERE slotId = ?`;
-
-      // Execute the query with the slotid as a parameter
-      const result = await executeQuery(deleteQuery, [slotId]);
-
-      // Check if deletion was successful
-      if (result && result.affectedRows > 0) {
-        return true; // Slot deleted successfully
-      } else {
-        throw new Error(
-          "Error deleting slot: Slot not found or already deleted."
-        );
-      }
-    } catch (error) {
-      // Handle errors
-      throw new Error(`Error deleting slot: ${error.message}`);
+ static async deleteSlotById(slotId) {
+  try {
+    //validate that slotId is valid or not 
+    let slotDetails = await this.getSlotById(slotId , null);
+    if(!slotDetails) {
+      throw new Error("Slot Not Found.");
     }
+    // THis things directly added in the slotproduct_relation table on delete cascade and in bookProductTable on delete SET NULL
+    /* // SQL query to delete the slot from the slotproduct_relation table
+    const deleteRelationQuery = `DELETE FROM slotproduct_relation WHERE slotId = ?`;
+
+    // Execute the query with the slotId as a parameter
+    await executeQuery(deleteRelationQuery, [slotId]);
+
+    // Update slotId to NULL in bookProduct
+    await BookProduct.updateSlotIdToNull(slotId);
+*/
+    // Now we can safely Delete the slotId from the slotmaster.
+
+    // SQL query to delete the slot from the slotmaster
+    const deleteQuery = `DELETE FROM slotmaster WHERE slotId = ?`;
+
+    // Execute the query with the slotid as a parameter
+    const result = await executeQuery(deleteQuery, [slotId]);
+
+    // Check if deletion was successful
+    if (result && result.affectedRows > 0) {
+      return true; // Slot deleted successfully
+    } else {
+      throw new Error(
+        "Error deleting slot: Slot not found or already deleted."
+      );
+    }
+  } catch (error) {
+    // Handle errors
+    throw new Error(`Error deleting slot: ${error.message}`);
   }
+}
+/**
+* Deletes slots from the slotmaster table based on a specified date.
+* Also it removes relation between slotId and productId in the slotProductRelation table.
+* Also it sets the slotId to null in the bookProduct table.
+* @param {string} dateToDelete - The date in 'YYYY-MM-DD' format for which slots should be deleted.
+* @returns {boolean} Returns true if slots were deleted successfully, otherwise throws an error.
+*/
+static async deleteSlotByDate(dateToDelete) {
+  try {
+    // SQL query to delete slots from slotmaster for the specified date
+    const deleteQuery = `DELETE FROM slotmaster WHERE DATE(slotDate) = ?`;
+
+    // Execute the query with the dateToDelete as a parameter
+    const result = await executeQuery(deleteQuery, [dateToDelete]);
+    console.log(result);
+    // Check if deletion was successful
+    
+    if (result && result.affectedRows == 0) {
+     console.log("Slot Already Deleted For this date or no slot available for this date")
+    } 
+    return true;
+    
+  } catch (error) {
+    // Handle errors
+    throw new Error(`Error deleting slots for date ${dateToDelete}: ${error.message}`);
+  }
+}
 
   async updateSlotAndBooking(connection, bookingId){
       const [updateResult] = await connection.execute(`

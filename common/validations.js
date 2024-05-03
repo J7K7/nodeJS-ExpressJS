@@ -56,6 +56,13 @@ const productDetailsValidation = async (
       message: "advance BookingDuration Can not be zero",
     };
   }
+  if (advanceBookingDuration > 365 ) {
+    return {
+      isValid: false,
+      message:"advanceBookingDuration can Have maximum value 1 year(365 Days)",
+    };
+    
+  }
 
   // Validate date format (YYYY-MM-DD)
   if (

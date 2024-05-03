@@ -94,7 +94,34 @@ class Product {
       throw new Error(`Error fetching all product details: ${error.message}`);
     }
   }
-  // This is the searchProducts Byu passing query Params It perform the search Operation
+    // This Fucntion for fetching not deleted products details only from productMaster like name,id,slotData etc..
+  
+    static async getAllProducts() {
+      try {
+        // SQL query to fetch all not deleted products
+        const query = `
+          SELECT productId,
+          productName,
+          productDescription,
+          advanceBookingDuration,
+          active_fromDate,
+          active_toDate,
+          productCapacity,
+          slotData
+          FROM productmaster
+          WHERE isDeleted=0
+        `;
+        // isActive = 1 and 
+        // Execute the query and await the result
+        const result = await executeQuery(query);
+  
+        // Return the result rows
+        return result;
+      } catch (error) {
+        throw new Error(`Error fetching all active products: ${error.message}`);
+      }
+    }
+  // This is the searchProducts By passing query Params It perform the search Operation
 
   static async searchProducts(query) {
     try {
@@ -602,7 +629,7 @@ class Product {
     Explanation of bookingCategory = slot:
     1.In this type system we have the slotData of single Day.
     2. In side the slotData it contain info about slot's  start time , end time ,price and capacity like:
-      [{fromTime:"09:30 AM",toTime:"12:30 PM",capacity:4,price:100},{...}]
+      [{slotFromTime:"09:30 AM",slotToTime:"12:30 PM",slotCapacity:4,slotPrice:100},{...}]
     3.Basically slotData is in string form beacause we are using form-data for req(due to image upload) 
         so we can't send it as json object directly. SO we use parsedSlotData.
     4. We are creating a new Slots for every Single Day in Active From Date to till active_from date + Advance book Duration.
@@ -673,6 +700,39 @@ class Product {
       throw error;
     }
   }
+   /**
+ * Add slots for a specific date and link them with the specified product ID.
+ * @param {string} slotDate - The date for which slots are to be added (YYYY-MM-DD format).
+ * @param {string} bookingCategoryId - The ID of the booking category for the slots.(DayWise(2) or slotwise(1))
+ * @param {object} slotData - The slot data to be added (assumed to be valid and in the correct format).
+ * @param {string} productId - The ID of the product to link the slots with (assumed to be valid).
+ * @returns {boolean} - True if slots were successfully added and linked with the product, false otherwise.
+ */
+   static async addSingleDateSlotByProductId(slotDate, bookingCategoryId, slotData, productId) {
+    try {
+        // Create an array to store slotIds
+        const slotIds = [];
+
+        // Add slots for the specified date and booking category
+        const singleDaySlotIds = await Slot.addSingleDateSlot(slotData, slotDate, bookingCategoryId);
+        slotIds.push(...singleDaySlotIds);
+        // Check if the slotIds array is empty
+        if (slotIds.length === 0) {
+            throw new Error(`Error in adding slots: Invalid slotData or Empty slotData`);
+        }
+        console.log(slotIds);
+
+        // Link the slots with the specified productId
+        const linkingResult = await this.linkSlotsWithProduct(productId, slotIds);
+       
+        console.log(linkingResult);
+        
+        return true; // Successfully linked slots with the product
+    } catch (error) {
+        // Handle any errors that occur during the process
+        throw error;
+    }
+}
 
   static async deleteProductById(productId) {
     try {

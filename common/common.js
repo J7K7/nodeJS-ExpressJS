@@ -186,7 +186,8 @@ const getSelectedCategory = async () => {
             return result[0]
         }
     } catch (error) {
-        
+        console.log("Error In Fetchin the BuisnessCategory Id",error);
+        throw error;
     }
 }
 
