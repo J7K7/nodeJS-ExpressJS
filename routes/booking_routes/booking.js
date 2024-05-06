@@ -46,7 +46,7 @@ router.post('/removeFromCart', auth , cartController.removeProductFromCart)
  * @method DELETE /booking/clearCart
  *          
  */
-router.delete('/clearCart' , cartController.clearCart)
+router.post('/clearCart' , auth,  cartController.clearCart)
 
 /**
  * @description Place an order with the products in the cart 

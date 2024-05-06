@@ -611,8 +611,8 @@ const cartController = {
 
   clearCart: async (req, res) => {
 
-    // let userId = req.user.userId;
-    let userId = 826;
+    let userId = req.user.userId;
+    // let userId = 826;
     let bookingCategoryId = req.body.bookingCategoryId;
 
     // Start a transaction
@@ -621,7 +621,7 @@ const cartController = {
 
     try {
       // find the products in the cart for currnet booking Id (IF THE CART EXISTS)
-
+      if(!bookingCategoryId) return res.status(404).json({ Status: false, msg: 'Please provide the bookingCategoryId' });
       let BookingMaster = new BookingsMaster();
 
       let currentBookingId = await BookingMaster.checkIfCartExists(

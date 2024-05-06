@@ -107,7 +107,8 @@ const ordersController = {
                     data.slotId,
                     data.slotFromDateTime,
                     data.slotToDateTime,
-                    data.price
+                    data.price,
+                    data.quantity
                 );
             });
 

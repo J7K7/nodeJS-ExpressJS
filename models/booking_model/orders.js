@@ -17,11 +17,28 @@ class Order {
         this.products.push({ productId, productName, productImageId, productImagePath, quantity, slots: [] });
     }
 
-    addSlot(productId, slotId, slotFromDateTime, slotToDateTime, price) {
+    // addSlot(productId, slotId, slotFromDateTime, slotToDateTime, price) {
+    //     const product = this.products.find(product => product.productId === productId);
+    //     // Check if the slotId already exists, if not add the slot
+    //     if (!product.slots.some(slot => slot.slotId === slotId)) {
+    //         product.slots.push({ slotId, slotFromDateTime, slotToDateTime, price });
+    //     }
+    // }
+
+    
+    addSlot(productId, slotId, slotFromDateTime, slotToDateTime, price , quantity = null) {
+
         const product = this.products.find(product => product.productId === productId);
         // Check if the slotId already exists, if not add the slot
         if (!product.slots.some(slot => slot.slotId === slotId)) {
+           if(quantity != null){
+            product.slots.push({ slotId, slotFromDateTime, slotToDateTime, price , quantity});
+            // console.log("SLOTS ADDED ARE navu navu: ");
+            // console.log(product.slots)
+           }else {
+            // console.log("else ma aivu")
             product.slots.push({ slotId, slotFromDateTime, slotToDateTime, price });
+           }
         }
     }
 

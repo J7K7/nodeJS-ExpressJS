@@ -83,11 +83,11 @@ router.put('/updateSlotById/:id',auth, ProductController.updateSlotById);
 
 // router.get('/getProductDetails/:id',ProductController.getProductDetailsById );
 
-router.get('/getSlotsByDateAndProductId',ProductController.getSlotsByDateAndProductId);
+router.get('/getSlotsByDateAndProductId',auth,ProductController.getSlotsByDateAndProductId);
 
 router.put('/updateSlotStatus/:id',auth, ProductController.updateSlotStatusById );
 
-router.delete('/deleteSlotById/:id',auth, ProductController.deleteSlotById );
+router.delete('/deleteSlotById',auth, ProductController.deleteSlotById );
 
 router.post('/addSingleSlotByProductId/:id',auth, ProductController.addSingleSlotByProductId);
 

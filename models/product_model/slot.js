@@ -168,11 +168,12 @@ class Slot {
     }
   }
   // This function give the active slots for  a particular product id and slotdate
-  static async getSlotsByDateAndProductId(date, productId) {
+  static async getSlotsByDateAndProductId(date, productId,isAdmin) {
     try {
-      const query = `SELECT sm.slotId, slotDate, slotFromDateTime, slotToDateTime, slotOriginalCapacity, slotPrice, slotActive, slotBooked FROM slotmaster as sm INNER JOIN slotproduct_relation spr ON sm.slotId = spr.slotId WHERE sm.slotDate=? AND spr.productId=? AND sm.slotActive=1 `;
+      let query = `SELECT sm.slotId, slotDate, slotFromDateTime, slotToDateTime, slotOriginalCapacity, slotPrice, slotActive, slotBooked FROM slotmaster as sm INNER JOIN slotproduct_relation spr ON sm.slotId = spr.slotId WHERE sm.slotDate=? AND spr.productId=?`;
+      if(!isAdmin) query+=' AND sm.slotActive=1'
       const results = await executeQuery(query, [date, productId]);
-      console.log(results)
+      // console.log(results)
       return results;
     } catch (error) {
       throw new Error(`Error fetching slots by Date and ProductId: ${error.message}`);
@@ -231,7 +232,7 @@ class Slot {
 
   // Function For updating particular slot details using its id
   static async updateSlotById(slotId, newSlotDetails, bookingCategoryId) {
-    const { slotFromDateTime, slotToDateTime, slotOriginalCapacity, slotPrice } = newSlotDetails;
+    let { slotFromDateTime, slotToDateTime, slotOriginalCapacity, slotPrice } = newSlotDetails;
     try {
       let result = await this.getSlotById(slotId , null);
       const slotBooked = result.slotBooked;
@@ -250,7 +251,7 @@ class Slot {
         SET slotFromDateTime = ?, slotToDateTime = ?, slotOriginalCapacity = ?, slotPrice = ?
         WHERE slotId = ?
       `;
-      let slotFromDateTime, slotToDateTime;
+      // let slotFromDateTimeFormated, slotToDateTime;
       if (bookingCategoryId == 1) {
         slotFromDateTime = combineDateTime(result.slotDate, slotFromDateTime);
         slotToDateTime = combineDateTime(result.slotDate, slotToDateTime);

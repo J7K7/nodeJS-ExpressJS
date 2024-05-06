@@ -26,7 +26,10 @@ const {
 } = require("../../common/common");
 const maxImagesPerProduct = process.env.MAX_IMAGES_PER_PRODUCT;
 const ProductCategory = require("../../models/product_model/category");
-const { scheduleProductDeactivation, updateActiveToDate } = require("../../scheduler/productSheduler");
+const {
+  scheduleProductDeactivation,
+  updateActiveToDate,
+} = require("../../scheduler/productSheduler");
 
 const ProductController = {
   addProduct: async (req, res) => {
@@ -190,7 +193,7 @@ const ProductController = {
       }
       // If everything went well, send a success response and set the sheduler for deactivate the product on active to date
       // Code for sheduling product Deactivation.
-      scheduleProductDeactivation(productId,active_toDate);
+      scheduleProductDeactivation(productId, active_toDate);
       res.status(201).json({
         productId,
         featureRelationResult,
@@ -215,11 +218,12 @@ const ProductController = {
 
   getAllProductsWithImagesandFeature: async (req, res) => {
     try {
-      const productCategoryId=req.query.productCategoryId;
+      const productCategoryId = req.query.productCategoryId;
       // console.log(productCategoryId,"category id");
-      const categoryId = productCategoryId !== null ? productCategoryId : '';
+      const categoryId = productCategoryId !== null ? productCategoryId : "";
       // Product Category Id is there than we pass that else empty function
-      const allProductDetails = await Product.getAllProductDetailsWithImagesAndFeatures(categoryId);
+      const allProductDetails =
+        await Product.getAllProductDetailsWithImagesAndFeatures(categoryId);
       /* This code is converted into fuunction which takes allProductDetails and convert into array of product in ProductAllDeatails model format
 
       // Organize the retrieved data into the desired format
@@ -436,14 +440,14 @@ const ProductController = {
   latestProducts: async (req, res) => {
     // This API return the top 10 latest product  added in the store if category Id is provided than it  will provide the product of that particular category otherwise it return from all products
     try {
-      const productCategoryId=req.query.productCategoryId;
+      const productCategoryId = req.query.productCategoryId;
       // console.log(productCategoryId,"category id");
-      const categoryId = productCategoryId !== null ? productCategoryId : '';
+      const categoryId = productCategoryId !== null ? productCategoryId : "";
 
       // Query your database to fetch all product details limit to 10
       // Product Category Id is there than we pass that else empty function
       const allProductDetails = await Product.getLatestProducts(categoryId);
-     
+
       // Get only unique product ids from the data and convert into Productdetails Model
       const productsArray = organizeProductDetailsMap(allProductDetails);
 
@@ -457,12 +461,15 @@ const ProductController = {
       });
     }
   },
-  getSlotsByDateAndProductId:async (req,res)=>{
+  getSlotsByDateAndProductId: async (req, res) => {
     // For fetching the slots for particular product and slotdate
+    const userId = req.user.userId;
+    // Currently there are fix that admin userId is 1 so according to that we are sending the product like if it is admin than all active and deactive product else only active for user
+    // console.log(userId);
     try {
       const productId = req.query.productId; // Default to empty string if not provided
       const slotDate = req.query.slotDate;
-      if(!productId || !slotDate){
+      if (!productId || !slotDate) {
         return res.status(400).json({
           Status: false,
           msg: "Please provide the All the required Query Params",
@@ -480,16 +487,25 @@ const ProductController = {
           msg: "Invalid product ID. Please provide a positive integer.",
         });
       }
-      console.log(productId,slotDate);
-      const slotsData=await Slot.getSlotsByDateAndProductId(slotDate,productId);
+      console.log(productId, slotDate);
+      // userId==1 if admin than true else false;
+      const slotsData = await Slot.getSlotsByDateAndProductId(
+        slotDate,
+        productId,
+        userId==1
+      );
       // In this section you can add the logic for handling the timezone according to the server and user.
       // For now we are assuming that both the server and client is using same timezone.
-      slotsData.forEach(slot => {
+      slotsData.forEach((slot) => {
         slot.slotDate = moment(slot.slotDate).format("YYYY-MM-DD");
-        slot.slotFromDateTime = moment(slot.slotFromDateTime).format('YYYY-MM-DD HH:mm:ss');
-        slot.slotToDateTime = moment(slot.slotToDateTime).format('YYYY-MM-DD HH:mm:ss');
+        slot.slotFromDateTime = moment(slot.slotFromDateTime).format(
+          "YYYY-MM-DD HH:mm:ss"
+        );
+        slot.slotToDateTime = moment(slot.slotToDateTime).format(
+          "YYYY-MM-DD HH:mm:ss"
+        );
       });
-      
+
       res.status(200).json({ Status: true, slotsData: slotsData });
     } catch (error) {
       console.error("Error fetching product slots:", error);
@@ -841,11 +857,11 @@ const ProductController = {
     try {
       // Check if required parameters are provided and apply slotValidations
       const slotData = {
-        date: slotDate,
-        price: slotPrice,
-        capacity: slotOriginalCapacity,
-        fromTime: slotFromDateTime,
-        toTime: slotToDateTime,
+        slotDate,
+        slotPrice,
+        slotOriginalCapacity,
+        slotFromDateTime,
+        slotToDateTime,
       };
       // passing slotData in array form beacause slot validation take slotData in array form  only
       const slotValidationResult = slotValidation(
@@ -891,7 +907,7 @@ const ProductController = {
     }
   },
   updateSlotById: async (req, res) => {
-    // console.log(req)
+    console.log(req.body);
     const {
       slotFromDateTime,
       slotToDateTime,
@@ -903,12 +919,18 @@ const ProductController = {
     try {
       // Check if required parameters are provided and apply slotValidations
       const slotData = {
-        price: slotPrice,
-        capacity: slotOriginalCapacity,
-        fromTime: slotFromDateTime,
-        toTime: slotToDateTime,
+        slotPrice,
+        slotOriginalCapacity,
+        slotFromDateTime,
+        slotToDateTime,
       };
       // passing slotData in array form beacause slot validation take slotData in array form  only
+      if (!bookingCategoryId) {
+        return res.status(400).json({
+          Status: false,
+          msg: "Please provide booking category Id",
+        });
+      }
       const slotValidationResult = slotValidation(
         [slotData],
         bookingCategoryId
@@ -995,7 +1017,7 @@ const ProductController = {
     }
   },
   updateProductDetails: async (req, res) => {
-    console.log(req.body)
+    console.log(req.body);
     try {
       // console.log(req.params['productId']);
       const {
@@ -1007,7 +1029,12 @@ const ProductController = {
       } = req.body;
       const productId = req.params.id;
       // console.log(productId);
-      if (!productId || isNaN(parseInt(productId)) || isNaN(parseInt(productId))<0) throw "Invalid Product ID";
+      if (
+        !productId ||
+        isNaN(parseInt(productId)) ||
+        isNaN(parseInt(productId)) < 0
+      )
+        throw "Invalid Product ID";
       if (!productCapacity || !advanceBookingDuration) {
         return res.status(400).json({ msg: "Missing fields!", Status: false });
       }
@@ -1019,13 +1046,13 @@ const ProductController = {
           .status(400)
           .json({ msg: "Fields must be numbers!", Status: false });
       }
-      if (advanceBookingDuration <= 0 ) {
+      if (advanceBookingDuration <= 0) {
         return res.status(400).json({
           msg: "advanceBookingDuration can not be zero  or negative!",
           Status: false,
         });
       }
-      if (advanceBookingDuration > 365 ) {
+      if (advanceBookingDuration > 365) {
         return res.status(400).json({
           msg: "advanceBookingDuration can Have maximum value 1 year(365 Days)",
           Status: false,
@@ -1075,7 +1102,7 @@ const ProductController = {
         });
       }
       // If every Thuing Goes well so we need to reshedule the product's deactivation date also (may be changed)
-      updateActiveToDate(productId,active_toDate);
+      updateActiveToDate(productId, active_toDate);
       return res
         .status(200)
         .json({ msg: "product updated successfully", Status: true });
@@ -1102,8 +1129,10 @@ const ProductController = {
     //  Same rule for when single booking contain the multiple slotIds.
     // So in short when ever we will delete the slot then first check whether there is any booking Than we cancel all the future Booking(booking_FromDate > currentDateTime) and delete the slot.
 
-    let slotId = req.params.id;
-    const { message, bookingCategoryId } = req.body;
+    // let slotId = req.params.id;
+    // const { message, bookingCategoryId } = req.body;
+    const slotId = req.query.slotId;
+    const message = req.query.message;
 
     try {
       // Validation checks
@@ -1188,21 +1217,17 @@ const ProductController = {
           .json({ Status: false, msg: "Failed to add category" });
       }
 
-      return res
-        .status(201)
-        .json({
-          productCategoryId,
-          Status: true,
-          msg: "Category added successfully",
-        });
+      return res.status(201).json({
+        productCategoryId,
+        Status: true,
+        msg: "Category added successfully",
+      });
     } catch (error) {
       console.error("Error in addCategory:", error);
-      return res
-        .status(500)
-        .json({
-          Status: false,
-          msg: "Error in adding category: " + error.message,
-        });
+      return res.status(500).json({
+        Status: false,
+        msg: "Error in adding category: " + error.message,
+      });
     }
   },
 
@@ -1212,13 +1237,19 @@ const ProductController = {
 
       // Validate category ID and name
       if (!productCategoryId || !categoryName) {
-        return res.status(400).json({ Status: false, msg: 'Category ID and name are required' });
+        return res
+          .status(400)
+          .json({ Status: false, msg: "Category ID and name are required" });
       }
 
       // Check if the category exists
-      const existingCategory = await ProductCategory.findCategoryById(productCategoryId);
+      const existingCategory = await ProductCategory.findCategoryById(
+        productCategoryId
+      );
       if (!existingCategory) {
-        return res.status(404).json({ Status: false, msg: 'Category not found' });
+        return res
+          .status(404)
+          .json({ Status: false, msg: "Category not found" });
       }
 
       // Create an instance of ProductCategory
@@ -1227,13 +1258,22 @@ const ProductController = {
       const result = await category.updateCategory(productCategoryId);
 
       if (result.affectedRows == 0) {
-        return res.status(500).json({ Status: false, msg: 'Failed to update category' });
+        return res
+          .status(500)
+          .json({ Status: false, msg: "Failed to update category" });
       }
 
-      return res.status(200).json({ Status: true, msg: 'Category updated successfully' });
+      return res
+        .status(200)
+        .json({ Status: true, msg: "Category updated successfully" });
     } catch (error) {
-      console.error('Error in editCategory:', error);
-      return res.status(500).json({ Status: false, msg: 'Error in editing category: ' + error.message });
+      console.error("Error in editCategory:", error);
+      return res
+        .status(500)
+        .json({
+          Status: false,
+          msg: "Error in editing category: " + error.message,
+        });
     }
   },
 
@@ -1244,26 +1284,40 @@ const ProductController = {
 
       // Validate category ID and name
       if (!productCategoryId) {
-        return res.status(400).json({ Status: false, msg: 'Category ID is required' });
+        return res
+          .status(400)
+          .json({ Status: false, msg: "Category ID is required" });
       }
 
       // Check if the category exists
-      const existingCategory = await ProductCategory.findCategoryById(productCategoryId);
+      const existingCategory = await ProductCategory.findCategoryById(
+        productCategoryId
+      );
       if (!existingCategory) {
-        return res.status(404).json({ Status: false, msg: 'Category not found' });
+        return res
+          .status(404)
+          .json({ Status: false, msg: "Category not found" });
       }
 
       // Delete the category
-      const deletionResult = await ProductCategory.deleteCategory(productCategoryId);
+      const deletionResult = await ProductCategory.deleteCategory(
+        productCategoryId
+      );
 
       if (deletionResult.success) {
-        return res.status(200).json({ Status: true, message: deletionResult.message });
+        return res
+          .status(200)
+          .json({ Status: true, message: deletionResult.message });
       } else {
-        return res.status(400).json({ Status: false, message: deletionResult.message });
+        return res
+          .status(400)
+          .json({ Status: false, message: deletionResult.message });
       }
     } catch (error) {
-      console.error('Error in deleting category:', error);
-      return res.status(400).json({ Status: false, message: 'Error in deleting category:' });
+      console.error("Error in deleting category:", error);
+      return res
+        .status(400)
+        .json({ Status: false, message: "Error in deleting category:" });
     }
   },
 
@@ -1316,12 +1370,10 @@ const ProductController = {
       return res.status(200).json({ Status: true, products });
     } catch (error) {
       console.error("Error in retrieving products by category:", error);
-      return res
-        .status(500)
-        .json({
-          Status: false,
-          msg: "Error in retrieving products by category.",
-        });
+      return res.status(500).json({
+        Status: false,
+        msg: "Error in retrieving products by category.",
+      });
     }
   },
 };
