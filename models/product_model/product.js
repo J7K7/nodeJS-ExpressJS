@@ -77,16 +77,16 @@ class Product {
     }
   }
   // Get All ProductDetails With Images And Feature not deleted products
-  static async getAllProductDetailsWithImagesAndFeatures(productCategoryId=null) {
+  static async getAllProductDetailsWithImagesAndFeatures(productCategoryId = null) {
     try {
       // SQL query to fetch all product details with images and features
-      var query = generalProductDetailsQuery()+`LEFT JOIN productcategory_product_relation AS pcr ON pm.productId = pcr.productId
+      var query = generalProductDetailsQuery() + `LEFT JOIN productcategory_product_relation AS pcr ON pm.productId = pcr.productId
       WHERE pm.isDeleted = 0 AND pm.isActive = 1
       AND (pcr.productCategoryId = ? OR ? IS NULL)`;
       // query += `pm.isDeleted=0 `;
       // console.log(query);
       // Execute the query
-      const result = await executeQuery(query,[productCategoryId,productCategoryId]);
+      const result = await executeQuery(query, [productCategoryId, productCategoryId]);
 
       // Return the result rows
       return result;
@@ -94,12 +94,12 @@ class Product {
       throw new Error(`Error fetching all product details: ${error.message}`);
     }
   }
-    // This Fucntion for fetching not deleted products details only from productMaster like name,id,slotData etc..
-  
-    static async getAllProducts() {
-      try {
-        // SQL query to fetch all not deleted products
-        const query = `
+  // This Fucntion for fetching not deleted products details only from productMaster like name,id,slotData etc..
+
+  static async getAllProducts() {
+    try {
+      // SQL query to fetch all not deleted products
+      const query = `
           SELECT productId,
           productName,
           productDescription,
@@ -111,16 +111,16 @@ class Product {
           FROM productmaster
           WHERE isDeleted=0
         `;
-        // isActive = 1 and 
-        // Execute the query and await the result
-        const result = await executeQuery(query);
-  
-        // Return the result rows
-        return result;
-      } catch (error) {
-        throw new Error(`Error fetching all active products: ${error.message}`);
-      }
+      // isActive = 1 and 
+      // Execute the query and await the result
+      const result = await executeQuery(query);
+
+      // Return the result rows
+      return result;
+    } catch (error) {
+      throw new Error(`Error fetching all active products: ${error.message}`);
     }
+  }
   // This is the searchProducts By passing query Params It perform the search Operation
 
   static async searchProducts(query) {
@@ -249,14 +249,27 @@ class Product {
         // ORDER BY RAND()
         // but it slows down the query execution time so we are not using it here
         const remainingIdsCount = 10 - topProductIds.length;
-        const additionalIdsQuery = `
-          SELECT productId
-          FROM productmaster
-          WHERE productId NOT IN (${topProductIds.join(
-            ","
-          )}) and isActive=1 and isDeleted=0
-          LIMIT ${remainingIdsCount}
-      `;
+        var additionalIdsQuery;
+        // If topProductIds is not empty, add the topProductIds to the query  
+        if (topProductIds.length > 0) {
+          additionalIdsQuery = `
+              SELECT productId
+              FROM productmaster
+              WHERE productId NOT IN (${topProductIds.join(",")})
+                  AND isActive = 1
+                  AND isDeleted = 0
+              LIMIT ${remainingIdsCount}
+          `;
+        } else {
+          // If topProductIds is empty, set additionalIdsQuery to an empty string
+          additionalIdsQuery = `
+              SELECT productId
+              FROM productmaster
+              WHERE isActive = 1
+                  AND isDeleted = 0
+              LIMIT ${remainingIdsCount}
+          `;
+        }
         const additionalIdsResult = await executeQuery(additionalIdsQuery);
         additionalProductIdsParams = additionalIdsResult.map(
           (row) => row.productId
@@ -293,13 +306,13 @@ class Product {
         ORDER BY pm.timestamp DESC
         LIMIT 10`;
 
-      const latestProductIdsResult = await executeQuery(latestProductIdQuery,[productCategoryId,productCategoryId]); // Pass the SQL query and parameter values to executeQuery
+      const latestProductIdsResult = await executeQuery(latestProductIdQuery, [productCategoryId, productCategoryId]); // Pass the SQL query and parameter values to executeQuery
       const latestProductIds = latestProductIdsResult.map((row) => row.productId);
       // If No product Found than return the empty array
-      if(latestProductIdsResult.length==0){
+      if (latestProductIdsResult.length == 0) {
         return [];
       }
-      
+
       // console.log(latestProductIds);
       const result = await this.getProductDetailsForIds(latestProductIds);
 
@@ -502,7 +515,7 @@ class Product {
       await Promise.all(relationPromises);
       return true; 
       */
-      if(featureIds.length==0){
+      if (featureIds.length == 0) {
         throw new Error(`No Feature Is Provided Please Provide atleast one feature`);
       }
 
@@ -700,39 +713,39 @@ class Product {
       throw error;
     }
   }
-   /**
- * Add slots for a specific date and link them with the specified product ID.
- * @param {string} slotDate - The date for which slots are to be added (YYYY-MM-DD format).
- * @param {string} bookingCategoryId - The ID of the booking category for the slots.(DayWise(2) or slotwise(1))
- * @param {object} slotData - The slot data to be added (assumed to be valid and in the correct format).
- * @param {string} productId - The ID of the product to link the slots with (assumed to be valid).
- * @returns {boolean} - True if slots were successfully added and linked with the product, false otherwise.
- */
-   static async addSingleDateSlotByProductId(slotDate, bookingCategoryId, slotData, productId) {
+  /**
+* Add slots for a specific date and link them with the specified product ID.
+* @param {string} slotDate - The date for which slots are to be added (YYYY-MM-DD format).
+* @param {string} bookingCategoryId - The ID of the booking category for the slots.(DayWise(2) or slotwise(1))
+* @param {object} slotData - The slot data to be added (assumed to be valid and in the correct format).
+* @param {string} productId - The ID of the product to link the slots with (assumed to be valid).
+* @returns {boolean} - True if slots were successfully added and linked with the product, false otherwise.
+*/
+  static async addSingleDateSlotByProductId(slotDate, bookingCategoryId, slotData, productId) {
     try {
-        // Create an array to store slotIds
-        const slotIds = [];
+      // Create an array to store slotIds
+      const slotIds = [];
 
-        // Add slots for the specified date and booking category
-        const singleDaySlotIds = await Slot.addSingleDateSlot(slotData, slotDate, bookingCategoryId);
-        slotIds.push(...singleDaySlotIds);
-        // Check if the slotIds array is empty
-        if (slotIds.length === 0) {
-            throw new Error(`Error in adding slots: Invalid slotData or Empty slotData`);
-        }
-        console.log(slotIds);
+      // Add slots for the specified date and booking category
+      const singleDaySlotIds = await Slot.addSingleDateSlot(slotData, slotDate, bookingCategoryId);
+      slotIds.push(...singleDaySlotIds);
+      // Check if the slotIds array is empty
+      if (slotIds.length === 0) {
+        throw new Error(`Error in adding slots: Invalid slotData or Empty slotData`);
+      }
+      console.log(slotIds);
 
-        // Link the slots with the specified productId
-        const linkingResult = await this.linkSlotsWithProduct(productId, slotIds);
-       
-        console.log(linkingResult);
-        
-        return true; // Successfully linked slots with the product
+      // Link the slots with the specified productId
+      const linkingResult = await this.linkSlotsWithProduct(productId, slotIds);
+
+      console.log(linkingResult);
+
+      return true; // Successfully linked slots with the product
     } catch (error) {
-        // Handle any errors that occur during the process
-        throw error;
+      // Handle any errors that occur during the process
+      throw error;
     }
-}
+  }
 
   static async deleteProductById(productId) {
     try {

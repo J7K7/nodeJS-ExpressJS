@@ -45,7 +45,7 @@ class Order {
     static async getAllOrders() {
         let sql = `
             SELECT b.bookingId, b.bookingDate, b.booking_fromDatetime, b.booking_toDatetime, b.statusId , b.grandTotal,b.timestamp,
-                p.productId, p.quantity, s.slotId, s.slotFromDateTime, s.slotToDateTime, s.price,
+                p.productId, s.quantity, s.slotId, s.slotFromDateTime, s.slotToDateTime, s.price,
                 pm.productName , ip.imageId
             FROM bookingsmaster b
             JOIN bookProduct p ON b.bookingId = p.bookingId
@@ -75,7 +75,7 @@ class Order {
                     b.statusId, 
                     b.grandTotal,
                     p.productId, 
-                    p.quantity, 
+                    s.quantity, 
                     s.slotId, 
                     s.slotFromDateTime, 
                     s.slotToDateTime, 
@@ -130,6 +130,7 @@ class Order {
                     s.slotFromDateTime, 
                     s.slotToDateTime, 
                     s.price,
+                    s.quantity,
                     pm.productName, 
                     ip.imageId,
                     pi.imagePath as productImagePath,
