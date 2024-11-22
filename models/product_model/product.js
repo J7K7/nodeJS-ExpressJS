@@ -297,14 +297,14 @@ class Product {
     try {
       // Build the base query
       let latestProductIdQuery = `
-              SELECT pm.productId
-        FROM productmaster AS pm
-        LEFT JOIN productcategory_product_relation AS pcr ON pm.productId = pcr.productId
-        WHERE pm.isDeleted = 0 AND pm.isActive = 1
-        AND (pcr.productCategoryId = ? OR ? IS NULL)
-        GROUP BY pm.productId
-        ORDER BY pm.timestamp DESC
-        LIMIT 10`;
+      SELECT pm.productId
+      FROM productmaster AS pm
+      LEFT JOIN productcategory_product_relation AS pcr ON pm.productId = pcr.productId
+      WHERE pm.isDeleted = 0 AND pm.isActive = 1
+      AND (pcr.productCategoryId = ? OR ? IS NULL)
+      GROUP BY pm.productId
+      ORDER BY pm.timestamp DESC
+      LIMIT 10`;
 
       const latestProductIdsResult = await executeQuery(latestProductIdQuery, [productCategoryId, productCategoryId]); // Pass the SQL query and parameter values to executeQuery
       const latestProductIds = latestProductIdsResult.map((row) => row.productId);

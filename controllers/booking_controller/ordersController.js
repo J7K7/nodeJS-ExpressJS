@@ -145,6 +145,21 @@ const ordersController = {
         } catch (err) {
             return res.status(400).json({ Status: false, msg: "Error Viewing Orders. Try Again !", err: err.message });
         }
+    },
+
+    getOrdersWithFilter : async (req, res) => {
+        try {
+            console.log(req.query);
+            const data = await Order.getAllOrdersWithFilter(req.query);
+            // console.log("orders Data: ",data);
+            if(data){
+                return res.status(200).json({ Status: true, msg: "Orders Displayed Successfully", bookings: data });
+            }else{
+                throw error;
+            }
+        } catch (error) {
+            return res.status(400).json({ Status: false, msg: "Error Viewing Orders. Try Again !", err: error.message });
+        }
     }
 }
 

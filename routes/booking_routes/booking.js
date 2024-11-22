@@ -91,5 +91,7 @@ router.get('/getAllBookingStatus' , bookingStatusController.getAllStatus)
  */
 router.get('/:bookingId/currentBookingStatus' , bookingStatusController.getCurrentBookingStatus)
 
+router.get('/getOrdersWithFilter', ordersController.getOrdersWithFilter);
+
 
 module.exports = router;

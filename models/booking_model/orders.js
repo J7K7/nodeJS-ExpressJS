@@ -62,6 +62,63 @@ class Order {
         }
     }
 
+    static async getAllOrdersWithFilter(filters) {
+        // let sql = `
+        //     SELECT b.bookingId, b.bookingDate, b.booking_fromDatetime, b.booking_toDatetime, b.statusId , b.grandTotal,b.timestamp,
+        //         p.productId, s.quantity, s.slotId, s.slotFromDateTime, s.slotToDateTime, s.price,
+        //         pm.productName , ip.imageId
+        //     FROM bookingsmaster b
+        //     JOIN bookProduct p ON b.bookingId = p.bookingId
+        //     JOIN productmaster pm ON p.productId = pm.productId
+        //     LEFT JOIN productimage_relation ip ON pm.productId = ip.productId
+        //     LEFT JOIN bookproduct s ON p.productId = s.productId AND p.bookingId = s.bookingId;
+        // `;
+
+        let sql = `SELECT bm.bookingId,  bm.bookingDate, bm.statusId, bm.grandTotal, bm.timestamp, GROUP_CONCAT(pcr.productCategoryId) AS productcategoryIds
+                   FROM bookingsmaster AS bm
+                   JOIN bookproduct AS bp ON bp.bookingId = bm.bookingId
+                   JOIN productcategory_product_relation AS pcr ON bp.productId = pcr.productId
+                   where '1'='1'`
+
+        try {
+            console.log(filters);
+            let queryParam = [];
+            if (filters.fromDate && filters.toDate) {
+                sql += ` AND bm.bookingDate between ? AND ?`;
+                queryParam.push(filters.fromDate);
+                queryParam.push(filters.toDate);
+            }
+              if (filters.statusId) {
+                sql += ` AND bm.statusId = ?`;
+                queryParam.push(filters.statusId)
+              }
+            
+              if (filters.productCategoryId) {
+                sql += ` AND FIND_IN_SET(?, pcr.productCategoryId) > 0`;
+                queryParam.push(filters.productCategoryId)
+              }
+
+              sql += ` GROUP BY bm.bookingId`
+              let pageQuery = `select count(bookingId) as totalResults from (${sql}) AS tab`
+              console.log("sql:",pageQuery);
+              const pageRes = await executeQuery(pageQuery, queryParam);
+            //   console.log("total pages: ", pageRes);
+            
+              sql += ` LIMIT ?, ?`;
+              queryParam.push(filters.offset);
+              queryParam.push(filters.limit);
+
+            
+            const res = await executeQuery(sql,queryParam);
+            return {
+                data: res,
+                totalResults: pageRes[0].totalResults
+            }
+        } catch (err) {
+            throw ('Error executing getAllOrders query:', err);
+        }
+    }
+
     static async getAllOrdersOfUser(userId, statusId = null) {
         let sql;
 
